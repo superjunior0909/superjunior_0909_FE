@@ -116,32 +116,36 @@ const selectedImage = ref(null)
 
 const loadProduct = async () => {
   try {
-    const response = await api.get(`/api/products/${props.id}`)
+    const response = await api.get(`/products/${props.id}`)
     console.log('상품 조회 성공:', response.data)
 
     // 백엔드 응답 데이터 구조에 맞게 매핑
     const productData = response.data.data || response.data
 
     product.value = {
-      id: productData.id,
+      id: productData.productId,
       title: productData.name,
       subtitle: productData.description,
-      category: productData.category || '전자제품',
-      image: productData.imageUrl || productData.image,
-      images: productData.images || [productData.imageUrl || productData.image],
+      category: productData.category || 'OTHER',
+      image: '/placeholder-product.jpg', // TODO: 이미지 필드 추가 필요
+      images: ['/placeholder-product.jpg'],
       currentPrice: productData.price,
-      originalPrice: productData.originalPrice || productData.price,
-      discountRate: productData.discountRate || 0,
-      rating: productData.rating || 4.5,
-      reviewCount: productData.reviewCount || 0,
-      currentCount: productData.currentCount || 0,
-      targetCount: productData.targetCount || 100,
-      timeLeft: productData.timeLeft || '종료일 미정',
-      specs: productData.specs || [],
+      originalPrice: productData.price,
+      discountRate: 0,
+      rating: 4.5,
+      reviewCount: 0,
+      currentCount: 0,
+      targetCount: 100,
+      timeLeft: '종료일 미정',
+      specs: [],
       description: productData.description,
-      detailedDescription: productData.detailedDescription,
-      shipping: productData.shipping || '무료배송',
-      seller: productData.seller
+      detailedDescription: null,
+      shipping: '무료배송',
+      seller: productData.sellerId,
+      stock: productData.stock,
+      originalLink: productData.originalLink,
+      createdAt: productData.createdAt,
+      updatedAt: productData.updatedAt
     }
   } catch (error) {
     console.error('상품 조회 실패:', error)
