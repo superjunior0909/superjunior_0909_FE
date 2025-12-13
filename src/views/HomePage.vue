@@ -247,46 +247,50 @@ const router = useRouter()
 
 const keyword = ref('')
 const categories = [
-  { id: 1, name: '전자제품', icon: '📱' },
-  { id: 2, name: '패션', icon: '👕' },
-  { id: 3, name: '식품', icon: '🍎' },
+  { id: 1, name: '생활 & 주방', icon: '🏠' },
+  { id: 2, name: '식품 & 간식', icon: '🍎' },
+  { id: 3, name: '건강 & 헬스', icon: '💪' },
   { id: 4, name: '뷰티', icon: '💄' },
-  { id: 5, name: '홈/리빙', icon: '🏠' },
-  { id: 6, name: '스포츠', icon: '⚽' },
-  { id: 7, name: '도서', icon: '📚' },
-  { id: 8, name: '기타', icon: '📦' }
+  { id: 5, name: '패션 & 의류', icon: '👟' },
+  { id: 6, name: '전자 & 디지털', icon: '📱' },
+  { id: 7, name: '유아 & 어린이', icon: '👶' },
+  { id: 8, name: '취미', icon: '🎨' },
+  { id: 9, name: '반려동물', icon: '🐾' }
 ]
 
 // 카테고리별 기본 이미지
 const categoryImages = {
-  'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
-  'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
+  'HOME': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
   'FOOD': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+  'HEALTH': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
   'BEAUTY': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
-  'HOME_LIVING': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
-  'BOOK': 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=400',
-  'SPORTS': 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400',
-  'OTHER': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400',
-  '전자제품': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
-  '패션': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
-  '식품': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+  'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
+  'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
+  'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
+  'HOBBY': 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400',
+  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400',
+  '생활 & 주방': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
+  '식품 & 간식': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+  '건강 & 헬스': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
   '뷰티': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
-  '홈/리빙': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
-  '도서': 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=400',
-  '스포츠': 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400',
-  '기타': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400'
+  '패션 & 의류': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
+  '전자 & 디지털': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
+  '유아 & 어린이': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
+  '취미': 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400',
+  '반려동물': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
 }
 
 // 카테고리 한글 변환
 const categoryMap = {
-  'ELECTRONICS': '전자제품',
-  'FASHION': '패션',
-  'FOOD': '식품',
+  'HOME': '생활 & 주방',
+  'FOOD': '식품 & 간식',
+  'HEALTH': '건강 & 헬스',
   'BEAUTY': '뷰티',
-  'HOME_LIVING': '홈/리빙',
-  'BOOK': '도서',
-  'SPORTS': '스포츠',
-  'OTHER': '기타'
+  'FASHION': '패션 & 의류',
+  'ELECTRONICS': '전자 & 디지털',
+  'KIDS': '유아 & 어린이',
+  'HOBBY': '취미',
+  'PET': '반려동물'
 }
 
 const popularProducts = ref([])
