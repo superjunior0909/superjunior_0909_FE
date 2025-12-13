@@ -116,32 +116,37 @@
             </div>
           </div>
           <div class="product-list">
-            <div
-              v-for="product in sellerProducts.slice(0, 4)"
-              :key="product.id"
-              class="product-card"
-              @click="goToProduct(product.id)"
-            >
-              <img :src="product.image" :alt="product.title" />
-              <div class="product-info">
-                <p class="category">{{ product.category }}</p>
-                <h3>{{ product.title }}</h3>
-                <p class="price">₩{{ product.currentPrice.toLocaleString() }}</p>
-                <div class="progress-info">
-                  <span class="progress-text">{{ product.currentCount }} / {{ product.targetCount }}명 참여</span>
-                  <div class="progress-bar">
-                    <div
-                      class="progress-fill"
-                      :style="{ width: `${Math.min((product.currentCount / product.targetCount) * 100, 100)}%` }"
-                    ></div>
+            <div v-if="loading" class="loading-state">
+              <p>상품 목록을 불러오는 중...</p>
+            </div>
+            <template v-else>
+              <div
+                v-for="product in sellerProducts.slice(0, 4)"
+                :key="product.id"
+                class="product-card"
+                @click="goToProduct(product.id)"
+              >
+                <img :src="product.image" :alt="product.title" />
+                <div class="product-info">
+                  <p class="category">{{ product.category }}</p>
+                  <h3>{{ product.title }}</h3>
+                  <p class="price">₩{{ product.currentPrice.toLocaleString() }}</p>
+                  <div class="progress-info">
+                    <span class="progress-text">재고: {{ product.stock }}개</span>
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill"
+                        :style="{ width: `${Math.min((product.currentCount / product.targetCount) * 100, 100)}%` }"
+                      ></div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div v-if="sellerProducts.length === 0" class="empty-state">
-              <p>등록된 상품이 없습니다</p>
-              <router-link to="/seller/register/product-register" class="btn btn-primary">상품 등록하기</router-link>
-            </div>
+              <div v-if="sellerProducts.length === 0" class="empty-state">
+                <p>등록된 상품이 없습니다</p>
+                <router-link to="/seller/register/product-register" class="btn btn-primary">상품 등록하기</router-link>
+              </div>
+            </template>
           </div>
         </article>
 
@@ -361,13 +366,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { sellerProfile, getSellerProducts, sellerNotices, sellerQna } from '@/data/products'
+import { sellerProfile, sellerNotices, sellerQna } from '@/data/products'
+import { productApi } from '@/api/axios'
 
 const router = useRouter()
 
 const seller = ref({ ...sellerProfile })
-const sellerProducts = ref(getSellerProducts(sellerProfile.name))
+const sellerProducts = ref([])
 const showEditModal = ref(false)
+const loading = ref(false)
 const editForm = ref({
   name: '',
   description: '',
@@ -657,8 +664,74 @@ const goToProduct = (id) => {
   router.push({ name: 'product-detail', params: { id } })
 }
 
+// 카테고리 한글 변환
+const categoryMap = {
+  'ELECTRONICS': '전자제품',
+  'FASHION': '패션',
+  'FOOD': '식품',
+  'BEAUTY': '뷰티',
+  'HOME_LIVING': '홈/리빙',
+  'BOOK': '도서',
+  'SPORTS': '스포츠',
+  'OTHER': '기타'
+}
+
+// 카테고리별 기본 이미지
+const categoryImages = {
+  'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
+  'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
+  'FOOD': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+  'BEAUTY': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+  'HOME_LIVING': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
+  'BOOK': 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=400',
+  'SPORTS': 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400',
+  'OTHER': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400'
+}
+
+// 백엔드 데이터를 프론트엔드 형식으로 변환
+const transformProduct = (product) => {
+  return {
+    id: product.productId,
+    title: product.name,
+    currentPrice: product.price,
+    originalPrice: product.price,
+    category: categoryMap[product.category] || product.category,
+    image: categoryImages[product.category] || categoryImages['OTHER'],
+    stock: product.stock,
+    description: product.description,
+    originalUrl: product.originalLink,
+    // 공동구매 정보는 추후 별도 API로 연동 (임시 값)
+    currentCount: 0,
+    targetCount: 10,
+    timeLeft: '진행 중'
+  }
+}
+
+// 내 상품 목록 불러오기
+const fetchMyProducts = async () => {
+  loading.value = true
+  try {
+    const response = await productApi.getMyProducts()
+    console.log('내 상품 목록:', response.data)
+
+    // 백엔드 응답 데이터 변환
+    if (response.data && response.data.data) {
+      sellerProducts.value = response.data.data.map(transformProduct)
+    } else if (Array.isArray(response.data)) {
+      sellerProducts.value = response.data.map(transformProduct)
+    }
+  } catch (error) {
+    console.error('상품 목록 조회 실패:', error)
+    // 에러 시 빈 배열 유지
+    sellerProducts.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
   loadSellerInfo()
+  fetchMyProducts()
 })
 </script>
 
@@ -1433,6 +1506,28 @@ onMounted(() => {
 .empty-state p {
   margin: 0 0 16px;
   color: #999;
+}
+
+/* 로딩 상태 */
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 15px;
+}
+
+.loading-state p {
+  margin: 0;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* 버튼 */

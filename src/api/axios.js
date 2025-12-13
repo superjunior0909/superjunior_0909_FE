@@ -78,7 +78,8 @@ api.interceptors.response.use(
 export const productApi = {
     createProduct: (data) => api.post("/products", data),
     getProductById: (productId) => api.get(`/products/${productId}`),
-    getProducts: () => api.get("/products"), // 상품 목록 조회 (백엔드 API 필요)
+    getProducts: () => api.get("/products"), // 전체 상품 목록 조회
+    getMyProducts: () => api.get("/products/my"), // 내 상품 목록 조회 (판매자 전용)
     updateProduct: (productId, data) => api.patch(`/products/${productId}`, data),
     deleteProduct: (productId) => api.delete(`/products/${productId}`),
 };
