@@ -88,6 +88,14 @@ export const productApi = {
 export const groupPurchaseApi = {
     createGroupPurchase: (data) => api.post("/purchases", data),
     getGroupPurchaseById: (purchaseId) => api.get(`/purchases/${purchaseId}`),
+    getMyGroupPurchases: () => {
+        // 내 공동구매 목록 조회 (판매자 전용)
+        const memberId = localStorage.getItem('member_id')
+        if (!memberId) {
+            return Promise.reject(new Error('로그인이 필요합니다.'))
+        }
+        return api.get(`/purchases/seller/${memberId}`, { params: { page: 0, size: 100 } })
+    },
     getGroupPurchasesBySeller: (sellerId, page = 0, size = 10) =>
         api.get(`/purchases/seller/${sellerId}`, { params: { page, size } }),
     updateGroupPurchase: (purchaseId, data) => api.patch(`/purchases/${purchaseId}`, data),

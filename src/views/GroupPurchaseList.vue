@@ -3,8 +3,8 @@
     <div class="container">
       <div class="page-header">
         <div>
-          <h1>{{ route.query.sellerId ? '내 공동구매 목록' : '공동구매 목록' }}</h1>
-          <p>{{ route.query.sellerId ? '운영 중인 공동구매를 확인하세요' : '진행 중인 공동구매를 확인하세요' }}</p>
+          <h1>{{ route.query.sellerId ? '판매자별 공동구매 목록' : '내 공동구매 목록' }}</h1>
+          <p>{{ route.query.sellerId ? '해당 판매자의 공동구매를 확인하세요' : '등록한 모든 공동구매를 확인하고 관리할 수 있습니다.' }}</p>
         </div>
         <!-- <button v-if="isSeller" class="btn btn-primary" @click="goToCreate"> -->
         <button class="btn btn-primary" @click="goToCreate"> 
@@ -238,41 +238,44 @@ const loadGroupPurchases = async () => {
   try {
     const sellerId = route.query.sellerId
 
+    let response
     if (sellerId) {
       // 판매자별 공동구매 목록 조회
-      const response = await groupPurchaseApi.getGroupPurchasesBySeller(sellerId, 0, 100)
+      response = await groupPurchaseApi.getGroupPurchasesBySeller(sellerId, 0, 100)
       console.log('판매자별 공동구매 목록:', response.data)
-
-      // 응답 구조에 따라 조정
-      const data = response.data.data || response.data
-      const content = data.content || data
-
-      // 백엔드 응답을 프론트엔드 형식으로 매핑
-      groupPurchases.value = Array.isArray(content) ? content.map(gp => ({
-        id: gp.groupPurchaseId || gp.id,
-        title: gp.title,
-        category: gp.category || '기타',
-        description: gp.description,
-        productName: gp.productName || '상품명',
-        seller: gp.sellerName || '판매자',
-        sellerId: gp.sellerId,
-        discountPrice: gp.discountedPrice || gp.discountPrice || 0,
-        originalPrice: gp.price || gp.originalPrice || 0,
-        minQuantity: gp.minQuantity,
-        maxQuantity: gp.maxQuantity,
-        currentCount: gp.currentQuantity || 0,
-        status: gp.status || 'OPEN',
-        startDate: gp.startDate,
-        endDate: gp.endDate,
-        createdAt: gp.createdAt
-      })) : []
     } else {
-      // TODO: 전체 공동구매 목록 조회 API가 필요합니다
-      // 현재는 localStorage에서 가져옴
-      groupPurchases.value = JSON.parse(localStorage.getItem('group_purchases') || '[]')
+      // 내 공동구매 목록 조회 (판매자 전용)
+      response = await groupPurchaseApi.getMyGroupPurchases()
+      console.log('내 공동구매 목록:', response.data)
     }
+
+    // 응답 구조에 따라 조정
+    const data = response.data.data || response.data
+    const content = data.content || data
+
+    // 백엔드 응답을 프론트엔드 형식으로 매핑
+    groupPurchases.value = Array.isArray(content) ? content.map(gp => ({
+      id: gp.groupPurchaseId || gp.id,
+      title: gp.title,
+      category: gp.category || '기타',
+      description: gp.description,
+      productName: gp.productName || '상품명',
+      seller: gp.sellerName || '판매자',
+      sellerId: gp.sellerId,
+      discountPrice: gp.discountedPrice || gp.discountPrice || 0,
+      originalPrice: gp.price || gp.originalPrice || 0,
+      minQuantity: gp.minQuantity,
+      maxQuantity: gp.maxQuantity,
+      currentCount: gp.currentQuantity || 0,
+      status: gp.status || 'OPEN',
+      startDate: gp.startDate,
+      endDate: gp.endDate,
+      createdAt: gp.createdAt
+    })) : []
   } catch (error) {
     console.error('공동구매 목록 조회 실패:', error)
+    const errorMessage = error.response?.data?.message || '공동구매 목록을 불러오는데 실패했습니다.'
+    console.error(errorMessage)
     groupPurchases.value = []
   } finally {
     loading.value = false

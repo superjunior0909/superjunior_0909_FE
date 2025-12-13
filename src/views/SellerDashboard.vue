@@ -160,35 +160,40 @@
             </div>
           </div>
           <div class="group-purchase-list">
-            <div
-              v-for="product in sellerProducts.slice(0, 3)"
-              :key="product.id"
-              class="group-purchase-item"
-              @click="goToProduct(product.id)"
-            >
-              <img :src="product.image" :alt="product.title" />
-              <div class="item-info">
-                <h3>{{ product.title }}</h3>
-                <p class="item-meta">
-                  <span>참여자: {{ product.currentCount }}/{{ product.targetCount }}명</span>
-                  <span>남은 시간: {{ product.timeLeft }}</span>
-                </p>
-                <div class="progress-bar">
-                  <div
-                    class="progress-fill"
-                    :style="{ width: `${Math.min((product.currentCount / product.targetCount) * 100, 100)}%` }"
-                  ></div>
+            <div v-if="loadingGroupPurchases" class="loading-state">
+              <p>공동구매 목록을 불러오는 중...</p>
+            </div>
+            <template v-else>
+              <div
+                v-for="gp in sellerGroupPurchases.slice(0, 3)"
+                :key="gp.id"
+                class="group-purchase-item"
+                @click="goToGroupPurchase(gp.id)"
+              >
+                <img :src="gp.image" :alt="gp.title" />
+                <div class="item-info">
+                  <h3>{{ gp.title }}</h3>
+                  <p class="item-meta">
+                    <span>참여자: {{ gp.currentCount }}/{{ gp.maxQuantity }}명</span>
+                    <span>남은 시간: {{ getTimeRemaining(gp.endDate) }}</span>
+                  </p>
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      :style="{ width: `${Math.min((gp.currentCount / gp.maxQuantity) * 100, 100)}%` }"
+                    ></div>
+                  </div>
+                </div>
+                <div class="item-price">
+                  <span class="original-price">₩{{ gp.originalPrice.toLocaleString() }}</span>
+                  <span class="current-price">₩{{ gp.discountPrice.toLocaleString() }}</span>
                 </div>
               </div>
-              <div class="item-price">
-                <span class="original-price">₩{{ product.originalPrice.toLocaleString() }}</span>
-                <span class="current-price">₩{{ product.currentPrice.toLocaleString() }}</span>
+              <div v-if="sellerGroupPurchases.length === 0" class="empty-state">
+                <p>진행 중인 공동구매가 없습니다</p>
+                <router-link to="/group-purchases/create" class="btn btn-primary">공동구매 등록하기</router-link>
               </div>
-            </div>
-            <div v-if="sellerProducts.length === 0" class="empty-state">
-              <p>진행 중인 공동구매가 없습니다</p>
-              <router-link to="/group-purchases/create" class="btn btn-primary">공동구매 등록하기</router-link>
-            </div>
+            </template>
           </div>
         </article>
 
@@ -371,14 +376,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { sellerProfile, sellerNotices, sellerQna } from '@/data/products'
-import { productApi } from '@/api/axios'
+import { productApi, groupPurchaseApi } from '@/api/axios'
 
 const router = useRouter()
 
 const seller = ref({ ...sellerProfile })
 const sellerProducts = ref([])
+const sellerGroupPurchases = ref([])
 const showEditModal = ref(false)
 const loading = ref(false)
+const loadingGroupPurchases = ref(false)
 const editForm = ref({
   name: '',
   description: '',
@@ -733,9 +740,76 @@ const fetchMyProducts = async () => {
   }
 }
 
+// 공동구매 데이터 변환
+const transformGroupPurchase = (gp) => {
+  return {
+    id: gp.groupPurchaseId || gp.id,
+    title: gp.title,
+    description: gp.description,
+    productName: gp.productName || '상품명',
+    discountPrice: gp.discountedPrice || gp.discountPrice || 0,
+    originalPrice: gp.price || gp.originalPrice || 0,
+    minQuantity: gp.minQuantity,
+    maxQuantity: gp.maxQuantity,
+    currentCount: gp.currentQuantity || 0,
+    status: gp.status || 'OPEN',
+    startDate: gp.startDate,
+    endDate: gp.endDate,
+    image: categoryImages[gp.category] || categoryImages['OTHER']
+  }
+}
+
+// 내 공동구매 목록 불러오기
+const fetchMyGroupPurchases = async () => {
+  loadingGroupPurchases.value = true
+  try {
+    const response = await groupPurchaseApi.getMyGroupPurchases()
+    console.log('내 공동구매 목록:', response.data)
+
+    // 백엔드 응답 데이터 변환
+    const data = response.data.data || response.data
+    const content = data.content || data
+
+    if (Array.isArray(content)) {
+      sellerGroupPurchases.value = content.map(transformGroupPurchase)
+    } else if (Array.isArray(data)) {
+      sellerGroupPurchases.value = data.map(transformGroupPurchase)
+    }
+  } catch (error) {
+    console.error('공동구매 목록 조회 실패:', error)
+    sellerGroupPurchases.value = []
+  } finally {
+    loadingGroupPurchases.value = false
+  }
+}
+
+// 남은 시간 계산
+const getTimeRemaining = (endDate) => {
+  if (!endDate) return '기간 미정'
+
+  const now = new Date()
+  const end = new Date(endDate)
+  const diff = end - now
+
+  if (diff < 0) return '종료됨'
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+
+  if (days > 0) return `${days}일 남음`
+  if (hours > 0) return `${hours}시간 남음`
+  return '1시간 이내'
+}
+
+// 공동구매 상세로 이동
+const goToGroupPurchase = (id) => {
+  router.push({ name: 'group-purchase-detail', params: { id } })
+}
+
 onMounted(() => {
   loadSellerInfo()
   fetchMyProducts()
+  fetchMyGroupPurchases()
 })
 </script>
 
