@@ -47,6 +47,8 @@ export const productApi = {
 export const groupPurchaseApi = {
     createGroupPurchase: (data) => api.post("/purchases", data),
     getGroupPurchaseById: (purchaseId) => api.get(`/purchases/${purchaseId}`),
+    getGroupPurchasesBySeller: (sellerId, page = 0, size = 10) =>
+        api.get(`/purchases/seller/${sellerId}`, { params: { page, size } }),
 };
 
 export default api;

@@ -55,7 +55,9 @@
               <h2>진행중인 공동구매</h2>
               <p>이번 달 {{ seller.monthlySales }}건의 공동구매를 운영하고 있어요.</p>
             </div>
-            <router-link class="link" to="/products">모든 상품 보기 →</router-link>
+            <router-link class="link" :to="{ path: '/group-purchases', query: { sellerId: sellerId } }">
+              모든 공동구매 보기 →
+            </router-link>
           </header>
           <div class="product-list">
             <article
@@ -154,6 +156,10 @@ const editForm = ref({
   description: ''
 })
 const badgesInput = ref('')
+
+// TODO: 실제로는 로그인한 판매자의 ID를 가져와야 합니다
+// 현재는 localStorage에서 판매자 ID를 가져오거나 임시 ID 사용
+const sellerId = ref(localStorage.getItem('seller_id') || 'temp-seller-id')
 
 const loadSellerInfo = () => {
   const savedSeller = JSON.parse(localStorage.getItem('seller_profile') || 'null')
