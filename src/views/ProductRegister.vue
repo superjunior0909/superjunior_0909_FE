@@ -171,12 +171,20 @@ const handleSubmit = async () => {
 }
 
 onMounted(() => {
+  // 로그인 체크
+  const token = localStorage.getItem('access_token')
+  if (!token) {
+    alert('로그인이 필요합니다.')
+    router.push('/login')
+    return
+  }
+
   // 판매자 권한 체크
-  //const role = localStorage.getItem('user_role')
-  // if (role !== 'seller') {
-  //   alert('판매자만 상품을 등록할 수 있습니다.')
-  //   router.push('/seller/application')
-  // }
+  const role = localStorage.getItem('user_role')
+  if (role !== 'SELLER') {
+    alert('판매자만 상품을 등록할 수 있습니다.')
+    router.push('/seller/application')
+  }
 })
 </script>
 

@@ -110,7 +110,10 @@
         <article class="panel wide">
           <div class="panel-header">
             <h2>내 상품 목록</h2>
-            <router-link to="/seller/products" class="link">전체 보기 →</router-link>
+            <div class="header-actions">
+              <router-link to="/seller/register/product-register" class="btn-new-product">+ 상품 등록</router-link>
+              <router-link to="/seller/products" class="link">전체 보기 →</router-link>
+            </div>
           </div>
           <div class="product-list">
             <div
@@ -843,6 +846,30 @@ onMounted(() => {
 
 .link:hover {
   color: #cccccc;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-new-product {
+  padding: 8px 16px;
+  background: #ffffff;
+  color: #0a0a0a;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-new-product:hover {
+  background: #f0f0f0;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 /* 정산 현황 */
