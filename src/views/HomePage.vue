@@ -270,12 +270,12 @@ const categories = [
 const categoryImages = {
   'HOME': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
   'FOOD': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
-  'HEALTH': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
+  'HEALTH': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
   'BEAUTY': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
   'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
   'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
   'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
-  'HOBBY': 'https://images.unsplash.com/photo-1452857297128-d9c29adba80b?w=400',
+  'HOBBY': 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400',
   'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
 }
 
@@ -327,7 +327,6 @@ const onMouseMove = (e) => {
   categoriesEl.value.scrollLeft = scrollLeft - walk
 }
 
-
 //남은 날짜 계산
 const calcTimeLeft = (endDate) => {
   if (!endDate) return ''
@@ -352,33 +351,31 @@ const isUrgent = (endDate) => {
   return (new Date(endDate) - new Date()) / (1000 * 60 * 60) <= 24
 }
 
-//진행 중인 공동구매 중 참여 수량이 제일 많은 3개 불러오기
+//진행 중인 공동구매 중 참여 수량이 제일 많은 항목 불러오기
 const fetchPopularProducts = async () => {
-  try {
-    const response = await groupPurchaseApi.getAllGroupPurchases(0, 4, 'currentQuantity,desc')
-    const data = response.data.data || response.data
-    const content = data.content || data
-    return Array.isArray(content) ? content : []
-  } catch (error) {
-    console.error('인기 공동구매 조회 실패:', error)
-    return []
-  }
+  const response = await groupPurchaseApi.getAllGroupPurchases(0, 100, 'currentQuantity,desc')
+  const data = response.data.data || response.data
+  const content = data.content || data
+
+  // OPEN 상태만 필터링하고 상위 6개만 반환
+  const openItems = Array.isArray(content) ? content.filter(item => item.status === 'OPEN') : []
+  return openItems.slice(0, 6)
 }
 
 //형식 맞추기
 const mapToProductCard = (gp) => {
-  // 카테고리 변환
+  // 카테고리 변환 (백엔드 enum -> 한글)
   const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
 
-  // 이미지 처리: 백엔드 이미지 > 카테고리 기본 이미지 > 기본 플레이스홀더
+  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
   let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
   if (!image || image.trim() === '') {
-    image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['PET'] || 'https://placehold.co/400x300/1a1a1a/666?text=No+Image'
+    image = categoryImages[gp.category] || categoryImages['PET']
   }
 
   const originalPrice = gp.price || gp.originalPrice || 0
-  const discountedPrice = gp.discountedPrice || gp.discountPrice || 0
-  const discountRate = originalPrice > 0 ? Math.round((1 - discountedPrice / originalPrice) * 100) : 0
+  const discountedPrice = gp.discountedPrice || gp.discountPrice || originalPrice
+  const discountRate = originalPrice > 0 ? Math.round(((originalPrice - discountedPrice) / originalPrice) * 100) : 0
 
   return {
     id: gp.groupPurchaseId || gp.id,
@@ -387,11 +384,11 @@ const mapToProductCard = (gp) => {
     category: categoryKorean,
     seller: gp.sellerName || '판매자',
     image: image,
-    originalPrice,
+    originalPrice: originalPrice,
     currentPrice: discountedPrice,
     discountRate: discountRate,
     currentCount: gp.currentQuantity || 0,
-    targetCount: gp.maxQuantity || 0,
+    targetCount: gp.maxQuantity || 1,
     timeLeft: calcTimeLeft(gp.endDate),
     hot: (gp.currentQuantity || 0) >= (gp.minQuantity || 0),
     urgent: isUrgent(gp.endDate)
@@ -402,30 +399,26 @@ const mapToProductCard = (gp) => {
 const endingProducts = ref([])
 
 const fetchEndingProducts = async () => {
-  try {
-    const response = await groupPurchaseApi.getAllGroupPurchases(0, 3, 'endDate,asc')
-    const data = response.data.data || response.data
-    const content = data.content || data
-    return Array.isArray(content) ? content : []
-  } catch (error) {
-    console.error('마감 임박 공동구매 조회 실패:', error)
-    return []
-  }
+  const response = await groupPurchaseApi.getAllGroupPurchases(0, 100, 'endDate,asc')
+  const data = response.data.data || response.data
+  const content = data.content || data
+
+  // OPEN 상태만 필터링하고 상위 6개만 반환
+  const openItems = Array.isArray(content) ? content.filter(item => item.status === 'OPEN') : []
+  return openItems.slice(0, 6)
 }
 
 //최신 공동구매
 const newProducts = ref([])
 
 const fetchNewProducts = async () => {
-  try {
-    const response = await groupPurchaseApi.getAllGroupPurchases(0, 3, 'createdAt,desc')
-    const data = response.data.data || response.data
-    const content = data.content || data
-    return Array.isArray(content) ? content : []
-  } catch (error) {
-    console.error('최신 공동구매 조회 실패:', error)
-    return []
-  }
+  const response = await groupPurchaseApi.getAllGroupPurchases(0, 100, 'startDate,desc')
+  const data = response.data.data || response.data
+  const content = data.content || data
+
+  // OPEN 상태만 필터링하고 상위 6개만 반환
+  const openItems = Array.isArray(content) ? content.filter(item => item.status === 'OPEN') : []
+  return openItems.slice(0, 6)
 }
 
 const onSearch = () => {
@@ -453,25 +446,17 @@ onMounted(async () => {
 
   // 공동구매 데이터 로드
   try {
-    console.log('홈페이지 공동구매 데이터 로드 시작...')
-
     const [popularDocs, endingDocs, newDocs] = await Promise.all([
       fetchPopularProducts(),
       fetchEndingProducts(),
       fetchNewProducts()
     ])
 
-    console.log('인기 공동구매:', popularDocs.length, '개')
-    console.log('마감 임박:', endingDocs.length, '개')
-    console.log('최신 공동구매:', newDocs.length, '개')
-
     popularProducts.value = popularDocs.map(mapToProductCard)
     endingProducts.value = endingDocs.map(mapToProductCard)
     newProducts.value = newDocs.map(mapToProductCard)
-
-    console.log('홈페이지 데이터 로드 완료')
   } catch (e) {
-    console.error('메인 페이지 상품 조회 실패:', e)
+    console.error('메인 페이지 상품 조회 실패', e)
     popularProducts.value = []
     endingProducts.value = []
     newProducts.value = []
