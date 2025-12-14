@@ -299,41 +299,33 @@ const getTimeLeft = (endDate) => {
  * TRANSFORM
  * ====================== */
 
- const isUrgent = (endDate) => {
-   if (!endDate) return false
-   return (new Date(endDate) - new Date()) / (1000 * 60 * 60) <= 24
- }
-
 //형식 맞추기
 const mapToProductCard = (gp) => {
-  // 카테고리 변환 (백엔드 enum -> 한글)
-  const categoryKorean = allCategories[gp.category] || gp.category || '기타'
+  const p = gp.productDocumentEmbedded || {}
 
-  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
-  let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
-  if (!image || image.trim() === '') {
-    image = categoryImages[gp.category]
-  }
+  // ✅ 이미지 우선순위: 상품 이미지 → 카테고리 기본 이미지
+  let image = categoryImages[p.category]
 
-  const originalPrice = gp.price || gp.originalPrice || 0
-  const discountedPrice = gp.discountedPrice || gp.discountPrice || originalPrice
-  const discountRate = originalPrice > 0 ? Math.round(((originalPrice - discountedPrice) / originalPrice) * 100) : 0
+  const originalPrice = p.price || 0
+  const discountedPrice = gp.discountedPrice || originalPrice
+  const discountRate =
+    originalPrice > 0
+      ? Math.round(((originalPrice - discountedPrice) / originalPrice) * 100)
+      : 0
 
   return {
-    id: gp.groupPurchaseId || gp.id,
+    id: gp.groupPurchaseId,
     title: gp.title,
-    subtitle: gp.description,
-    category: categoryKorean,
-    seller: gp.sellerName || '판매자',
-    image: image,
-    originalPrice: originalPrice,
+    subtitle: gp.description || '',
+    category: p.category || '기타',
+    image,
+    originalPrice,
     currentPrice: discountedPrice,
-    discountRate: discountRate,
+    discountRate,
     currentCount: gp.currentQuantity || 0,
     targetCount: gp.maxQuantity || 1,
     timeLeft: getTimeLeft(gp.endDate),
-    hot: (gp.currentQuantity || 0) >= (gp.minQuantity || 0),
-    urgent: isUrgent(gp.endDate)
+    badges: [gp.status]
   }
 }
 
