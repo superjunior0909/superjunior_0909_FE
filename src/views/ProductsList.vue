@@ -46,27 +46,44 @@
 
         <!-- CATEGORY (더보기) -->
         <div class="filter-row secondary">
-          <div class="chips" :class="{ expanded: showAllCategories }">
-            <button
-              v-for="category in visibleCategories"
-              :key="category.value"
-              class="chip"
-              :class="{ active: selectedCategory === category.value }"
-              @click="selectCategory(category.value)"
-            >
-              {{ category.icon }} {{ category.label }}
-            </button>
+          <div class="category-wrapper">
+            <!-- 기본 카테고리 (전체 + 3개) -->
+            <div class="categories primary">
+              <button
+                v-for="cat in primaryCategories"
+                :key="cat.value"
+                class="category-btn"
+                :class="{ active: selectedCategory === cat.value }"
+                @click="filterByCategory(cat.value)"
+              >
+                <span>{{ cat.icon }}</span>
+                <span>{{ cat.label }}</span>
+              </button>
 
-            <button
-              v-if="hiddenCategories.length > 0"
-              class="chip"
-              @click="toggleMoreCategories"
-            >
-              {{ showAllCategories ? '접기' : '+ 더보기' }}
-            </button>
+              <!-- 더보기 버튼 -->
+              <button
+                class="category-btn more"
+                @click="toggleMoreCategories"
+              >
+                {{ showMoreCategories ? '접기' : '+ 더보기' }}
+              </button>
+            </div>
+
+            <!-- 더보기 카테고리 (아래로 펼쳐짐) -->
+            <div v-show="showMoreCategories" class="categories secondary">
+              <button
+                v-for="cat in secondaryCategories"
+                :key="cat.value"
+                class="category-btn"
+                :class="{ active: selectedCategory === cat.value }"
+                @click="filterByCategory(cat.value)"
+              >
+                <span>{{ cat.icon }}</span>
+                <span>{{ cat.label }}</span>
+              </button>
+            </div>
           </div>
         </div>
-
       </div>
     </section>
 
@@ -189,7 +206,6 @@ const primarySections = [
 /* ======================
  * CATEGORY (더보기)
  * ====================== */
-const showAllCategories = ref(false)
 
 const allCategories = [
   { value: '', label: '전체', icon: '✨' },
@@ -204,22 +220,29 @@ const allCategories = [
   { value: 'PET', label: '반려동물', icon: '🐶' }
 ]
 
-const visibleCategories = computed(() => {
-  return showAllCategories.value
-    ? allCategories
-    : allCategories.slice(0, 4) // 전체 + 3개
-})
-
-const hiddenCategories = computed(() => {
-  return showAllCategories.value ? [] : allCategories.slice(4)
-})
+const showMoreCategories = ref(false)
 
 const toggleMoreCategories = () => {
-  showAllCategories.value = !showAllCategories.value
+  showMoreCategories.value = !showMoreCategories.value
 }
 
-const selectCategory = (value) => {
-  selectedCategory.value = value
+// 기본: 전체 + 3개
+const primaryCategories = computed(() => {
+  return allCategories.slice(0, 4)
+})
+
+// 더보기 영역
+const secondaryCategories = computed(() => {
+  return allCategories.slice(4)
+})
+
+const filterByCategory = (value) => {
+  // 전체 다시 선택
+  if (value === '') {
+    selectedCategory.value = ''
+  } else {
+    selectedCategory.value = value
+  }
   loadProducts()
 }
 
@@ -451,25 +474,45 @@ onMounted(loadProducts)
   background: #151515;
 }
 
-.category-select {
-  color: #ffffff;
+.category-wrapper {
+  display: flex;
+  flex-direction: column;
 }
 
-.category-select select {
-  margin-left: 8px;
+.categories {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.categories.primary {
+  margin-bottom: 8px;
+}
+
+.categories.secondary {
+  margin-top: 4px;
+}
+
+.category-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 10px 14px;
-  background: #0f0f0f;
+  border-radius: 999px;
   border: 1px solid #2a2a2a;
-  border-radius: 8px;
+  background: #1a1a1a;
   color: #ffffff;
   cursor: pointer;
-  min-width: 180px;
 }
 
-.category-select select:focus {
-  outline: none;
+.category-btn.active {
   border-color: #ffffff;
 }
+
+.category-btn.more {
+  opacity: 0.8;
+}
+
 
 .product-grid-section {
   padding: 40px 0 80px;
