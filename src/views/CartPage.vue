@@ -44,9 +44,15 @@
                 <p v-else class="price">가격 정보 없음</p>
                 <p class="quantity-label">수량</p>
                 <div class="quantity-control">
-                  <button @click="changeQuantity(item.cartId, -1)">-</button>
+                  <button 
+                    @click="changeQuantity(item.cartId, -1)"
+                    :disabled="updatingItems.has(item.cartId) || item.quantity <= 1"
+                  >-</button>
                   <span>{{ item.quantity }}</span>
-                  <button @click="changeQuantity(item.cartId, 1)">+</button>
+                  <button 
+                    @click="changeQuantity(item.cartId, 1)"
+                    :disabled="updatingItems.has(item.cartId)"
+                  >+</button>
                 </div>
               </div>
               <div class="item-footer">
@@ -54,7 +60,11 @@
                   <span>생성일: {{ formatDate(item.createdAt) }}</span>
                   <span>수정일: {{ formatDate(item.updatedAt) }}</span>
                 </div>
-                <button class="link-btn" @click="removeItem(item.cartId)">삭제</button>
+                <button 
+                  class="link-btn" 
+                  @click="removeItem(item.cartId)"
+                  :disabled="updatingItems.has(item.cartId)"
+                >삭제</button>
               </div>
             </div>
           </div>
@@ -80,7 +90,13 @@
               <span>총 결제 예정 금액</span>
               <strong>₩{{ finalPrice.toLocaleString() }}</strong>
             </div>
-            <button class="btn btn-primary" :disabled="items.length === 0">결제하기</button>
+            <button
+              class="btn btn-primary"
+              :disabled="items.length === 0"
+              @click="goToOrder"
+            >
+              주문하기
+            </button>
             <p class="notice">공동구매 미달성 시 결제금액은 자동 환불됩니다.</p>
           </div>
         </aside>
@@ -91,11 +107,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { cartApi } from '@/api/axios'
 import { groupPurchaseApi } from '@/api/axios'
 
+const router = useRouter()
 const items = ref([])
 const loading = ref(false)
+const updatingItems = ref(new Set()) // 수정 중인 항목 ID들
 
 const formatDate = (dateString) => {
   if (!dateString) return '-'
@@ -113,8 +132,10 @@ const loadCartItems = async () => {
   try {
     loading.value = true
     const response = await cartApi.getCart(0, 100)
-    // pageable 응답에서 content 추출
-    const cartData = response.data?.content || response.data?.data || response.data || []
+    // ResponseDto<PageResponse<CartInfo>> 구조에서 content 추출
+    // PageResponse 구조: { content, totalPages, totalElements, first, last, size, numberOfElements }
+    const pageResponse = response.data?.data || response.data
+    const cartData = pageResponse?.content || []
     
     // 각 장바구니 항목에 공동구매 정보 가져오기
     const itemsWithDetails = await Promise.all(
@@ -139,6 +160,10 @@ const loadCartItems = async () => {
     items.value = itemsWithDetails
   } catch (error) {
     console.error('장바구니 조회 실패:', error)
+    // 503 에러는 서버 연결 문제
+    if (error.response?.status === 503) {
+      console.warn('Gateway 서버에 연결할 수 없습니다. Gateway가 실행 중인지 확인하세요.')
+    }
     items.value = []
   } finally {
     loading.value = false
@@ -174,17 +199,63 @@ const totalQuantity = computed(() => {
   return items.value.reduce((sum, item) => sum + item.quantity, 0)
 })
 
-const changeQuantity = (cartId, delta) => {
-  // TODO: API 호출로 수량 변경
+const changeQuantity = async (cartId, delta) => {
   const item = items.value.find(item => item.cartId === cartId)
-  if (item) {
-    item.quantity = Math.max(1, item.quantity + delta)
+  if (!item) return
+  
+  const newQuantity = Math.max(1, item.quantity + delta)
+  if (newQuantity === item.quantity) return // 수량이 변경되지 않으면 종료
+  
+  // 업데이트 중 표시
+  updatingItems.value.add(cartId)
+  
+  try {
+    await cartApi.updateCart({
+      cartId,
+      quantity: newQuantity
+    })
+    // 장바구니 목록 다시 불러오기
+    await loadCartItems()
+    // 장바구니 개수 업데이트 이벤트 발생
+    window.dispatchEvent(new CustomEvent('cart-updated'))
+  } catch (error) {
+    console.error('수량 변경 실패:', error)
+    const errorMessage = error.response?.data?.message || '수량 변경에 실패했습니다.'
+    alert(errorMessage)
+    // 에러 발생 시에도 목록 다시 불러오기
+    await loadCartItems()
+  } finally {
+    updatingItems.value.delete(cartId)
   }
 }
 
-const removeItem = (cartId) => {
-  // TODO: API 호출로 삭제
-  items.value = items.value.filter(item => item.cartId !== cartId)
+const removeItem = async (cartId) => {
+  if (!confirm('장바구니에서 제거하시겠습니까?')) {
+    return
+  }
+  
+  // 업데이트 중 표시
+  updatingItems.value.add(cartId)
+  
+  try {
+    await cartApi.deleteFromCart({ cartId })
+    // 장바구니 목록 다시 불러오기
+    await loadCartItems()
+    // 장바구니 개수 업데이트 이벤트 발생
+    window.dispatchEvent(new CustomEvent('cart-updated'))
+  } catch (error) {
+    console.error('장바구니 항목 삭제 실패:', error)
+    const errorMessage = error.response?.data?.message || '장바구니 항목 삭제에 실패했습니다.'
+    alert(errorMessage)
+    // 에러 발생 시에도 목록 다시 불러오기
+    await loadCartItems()
+  } finally {
+    updatingItems.value.delete(cartId)
+  }
+}
+
+const goToOrder = () => {
+  router.push({ path: '/order/create', query: { from: 'cart' } })
 }
 
 onMounted(() => {
@@ -344,10 +415,16 @@ onMounted(() => {
   background: #1a1a1a;
   color: #ffffff;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-.quantity-control button:hover {
+.quantity-control button:hover:not(:disabled) {
   background: #2a2a2a;
+}
+
+.quantity-control button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .quantity-control span {
@@ -369,6 +446,17 @@ onMounted(() => {
   color: #ff6b6b;
   cursor: pointer;
   font-weight: 600;
+  transition: all 0.2s;
+}
+
+.link-btn:hover:not(:disabled) {
+  color: #ff5252;
+  text-decoration: underline;
+}
+
+.link-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .checkout-card {
