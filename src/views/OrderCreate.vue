@@ -21,12 +21,16 @@
                 class="address-option"
                 :class="{ active: selectedAddressId === address.addressId }"
               >
-                <input
-                  type="radio"
-                  :value="address.addressId"
-                  v-model="selectedAddressId"
-                  @change="selectAddress(address)"
-                />
+                <div class="radio-custom">
+                  <input
+                    type="radio"
+                    :value="address.addressId"
+                    v-model="selectedAddressId"
+                    @change="selectAddress(address)"
+                    :id="`address-${address.addressId}`"
+                  />
+                  <label :for="`address-${address.addressId}`" class="radio-label"></label>
+                </div>
                 <div class="address-info">
                   <div class="address-main">
                     <strong>{{ address.receiverName }}</strong>
@@ -43,12 +47,16 @@
                 class="address-option"
                 :class="{ active: selectedAddressId === 'new' }"
               >
-                <input
-                  type="radio"
-                  value="new"
-                  v-model="selectedAddressId"
-                  @change="selectNewAddress"
-                />
+                <div class="radio-custom">
+                  <input
+                    type="radio"
+                    value="new"
+                    v-model="selectedAddressId"
+                    @change="selectNewAddress"
+                    id="address-new"
+                  />
+                  <label for="address-new" class="radio-label"></label>
+                </div>
                 <div class="address-info">
                   <strong>새 주소 입력</strong>
                 </div>
@@ -167,6 +175,14 @@ const isFromCart = computed(() => {
   return route.query.from === 'cart'
 })
 
+// 선택된 장바구니 ID들
+const selectedCartIds = computed(() => {
+  if (route.query.cartIds) {
+    return route.query.cartIds.split(',').filter(id => id)
+  }
+  return []
+})
+
 const isFormValid = computed(() => {
   return (
     orderForm.value.addressData.address &&
@@ -239,9 +255,14 @@ const loadOrderItems = async () => {
       const pageResponse = response.data?.data || response.data
       const cartData = pageResponse?.content || []
       
+      // 선택된 항목만 필터링 (cartIds가 있으면)
+      const filteredCartData = selectedCartIds.value.length > 0
+        ? cartData.filter(item => selectedCartIds.value.includes(item.cartId))
+        : cartData
+      
       // 각 장바구니 항목에 공동구매 정보 가져오기
       const itemsWithDetails = await Promise.all(
-        cartData.map(async (cartItem) => {
+        filteredCartData.map(async (cartItem) => {
           try {
             const gpResponse = await groupPurchaseApi.getGroupPurchaseById(cartItem.groupPurchaseId)
             const groupPurchase = gpResponse.data?.data || gpResponse.data
@@ -305,8 +326,10 @@ const handleSubmit = async () => {
         return
       }
       
-      // 장바구니 ID 리스트 생성
-      const cartIds = orderItems.value.map(item => item.cartId).filter(id => id)
+      // 장바구니 ID 리스트 생성 (선택된 항목들만)
+      const cartIds = selectedCartIds.value.length > 0
+        ? selectedCartIds.value
+        : orderItems.value.map(item => item.cartId).filter(id => id)
       
       if (cartIds.length === 0) {
         alert('주문할 상품이 없습니다.')
@@ -588,9 +611,50 @@ onMounted(() => {
   background: #1a1a1a;
 }
 
-.address-option input[type="radio"] {
+.radio-custom {
+  position: relative;
   margin-top: 4px;
+}
+
+.radio-custom input[type="radio"] {
+  position: absolute;
+  opacity: 0;
   cursor: pointer;
+  width: 0;
+  height: 0;
+}
+
+.radio-label {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #3a3a3a;
+  border-radius: 50%;
+  background: #0f0f0f;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.radio-custom input[type="radio"]:checked + .radio-label {
+  border-color: #ffffff;
+  background: #ffffff;
+}
+
+.radio-custom input[type="radio"]:checked + .radio-label::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #0a0a0a;
+}
+
+.radio-custom input[type="radio"]:hover + .radio-label {
+  border-color: #666;
 }
 
 .address-info {

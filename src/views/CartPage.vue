@@ -24,11 +24,31 @@
             <p>장바구니가 비어 있어요.</p>
             <router-link class="btn btn-primary" to="/products">상품 둘러보기</router-link>
           </div>
+          <div class="select-all-bar" v-if="items.length > 0">
+            <label class="select-all-checkbox">
+              <input
+                type="checkbox"
+                :checked="selectedItems.size === items.length && items.length > 0"
+                @change="toggleSelectAll"
+              />
+              <span>전체 선택</span>
+            </label>
+            <span class="selected-count">{{ selectedItems.size }}개 선택됨</span>
+          </div>
           <div
             v-for="item in items"
             :key="item.cartId"
             class="cart-item"
+            :class="{ selected: selectedItems.has(item.cartId) }"
           >
+            <div class="item-checkbox-wrapper">
+              <input
+                type="checkbox"
+                :checked="selectedItems.has(item.cartId)"
+                @change="toggleItem(item.cartId)"
+                class="item-checkbox"
+              />
+            </div>
             <div class="item-body">
               <div class="item-head">
                 <p class="cart-id">장바구니 ID: {{ item.cartId }}</p>
@@ -88,14 +108,14 @@
             <hr />
             <div class="row total">
               <span>총 결제 예정 금액</span>
-              <strong>₩{{ finalPrice.toLocaleString() }}</strong>
+              <strong>₩{{ selectedTotalPrice.toLocaleString() }}</strong>
             </div>
             <button
               class="btn btn-primary"
-              :disabled="items.length === 0"
+              :disabled="selectedItems.size === 0"
               @click="goToOrder"
             >
-              주문하기
+              주문하기 ({{ selectedItems.size }}개)
             </button>
             <p class="notice">공동구매 미달성 시 결제금액은 자동 환불됩니다.</p>
           </div>
@@ -115,6 +135,7 @@ const router = useRouter()
 const items = ref([])
 const loading = ref(false)
 const updatingItems = ref(new Set()) // 수정 중인 항목 ID들
+const selectedItems = ref(new Set()) // 선택된 장바구니 항목 ID들
 
 const formatDate = (dateString) => {
   if (!dateString) return '-'
@@ -158,6 +179,9 @@ const loadCartItems = async () => {
     )
     
     items.value = itemsWithDetails
+    // 장바구니 로드 시 모든 항목 자동 선택
+    selectedItems.value.clear()
+    itemsWithDetails.forEach(item => selectedItems.value.add(item.cartId))
   } catch (error) {
     console.error('장바구니 조회 실패:', error)
     // 503 에러는 서버 연결 문제
@@ -191,13 +215,41 @@ const totalDiscount = computed(() => {
   )
 })
 
-const finalPrice = computed(() => {
-  return totalPrice.value
-})
+// const finalPrice = computed(() => {
+//   return totalPrice.value
+// })
 
 const totalQuantity = computed(() => {
   return items.value.reduce((sum, item) => sum + item.quantity, 0)
 })
+
+// 선택된 항목들의 총 가격
+const selectedTotalPrice = computed(() => {
+  return items.value
+    .filter(item => selectedItems.value.has(item.cartId))
+    .reduce((sum, item) => {
+      const price = item.groupPurchase?.discountedPrice || 0
+      return sum + price * item.quantity
+    }, 0)
+})
+
+// 전체 선택/해제
+const toggleSelectAll = (event) => {
+  if (event.target.checked) {
+    items.value.forEach(item => selectedItems.value.add(item.cartId))
+  } else {
+    selectedItems.value.clear()
+  }
+}
+
+// 개별 항목 선택/해제
+const toggleItem = (cartId) => {
+  if (selectedItems.value.has(cartId)) {
+    selectedItems.value.delete(cartId)
+  } else {
+    selectedItems.value.add(cartId)
+  }
+}
 
 const changeQuantity = async (cartId, delta) => {
   const item = items.value.find(item => item.cartId === cartId)
@@ -294,7 +346,20 @@ const removeItem = async (cartId) => {
 }
 
 const goToOrder = () => {
-  router.push({ path: '/order/create', query: { from: 'cart' } })
+  if (selectedItems.value.size === 0) {
+    alert('주문할 상품을 선택해주세요.')
+    return
+  }
+  
+  // 선택된 cartId들을 쿼리 파라미터로 전달
+  const selectedCartIds = Array.from(selectedItems.value)
+  router.push({ 
+    path: '/order/create', 
+    query: { 
+      from: 'cart',
+      cartIds: selectedCartIds.join(',')
+    } 
+  })
 }
 
 onMounted(() => {
@@ -370,6 +435,37 @@ onMounted(() => {
   gap: 16px;
 }
 
+.select-all-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.select-all-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.select-all-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.selected-count {
+  color: #999;
+  font-size: 14px;
+}
+
 .cart-item {
   display: flex;
   gap: 16px;
@@ -378,6 +474,25 @@ onMounted(() => {
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+}
+
+.cart-item.selected {
+  border-color: #ffffff;
+  background: #1f1f1f;
+}
+
+.item-checkbox-wrapper {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.item-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #ffffff;
 }
 
 .cart-item img {
