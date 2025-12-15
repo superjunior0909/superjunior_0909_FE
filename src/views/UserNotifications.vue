@@ -6,6 +6,24 @@
         <button v-if="notifications.length > 0" class="btn-clear" @click="clearAll">전체 삭제</button>
       </div>
 
+      <!-- 탭 필터 -->
+      <div class="tab-filters">
+        <button
+          class="tab-btn"
+          :class="{ active: currentTab === 'all' }"
+          @click="changeTab('all')"
+        >
+          전체
+        </button>
+        <button
+          class="tab-btn"
+          :class="{ active: currentTab === 'unread' }"
+          @click="changeTab('unread')"
+        >
+          읽지 않음
+        </button>
+      </div>
+
       <!-- 로딩 상태 -->
       <div v-if="loading" class="loading-state">
         <div class="loading-spinner">⏳</div>
@@ -70,12 +88,17 @@ const loading = ref(false)
 const currentPage = ref(0)
 const totalPages = ref(0)
 const pageSize = 20
+const currentTab = ref('all')
 
 // 알림 목록 조회
 const fetchNotifications = async (page = 0) => {
   try {
     loading.value = true
-    const response = await notificationApi.getNotifications(page, pageSize)
+
+    // 탭에 따라 다른 API 호출
+    const response = currentTab.value === 'unread'
+      ? await notificationApi.getUnreadNotifications(page, pageSize)
+      : await notificationApi.getNotifications(page, pageSize)
 
     console.log('알림 API 응답:', response.data)
 
@@ -108,6 +131,12 @@ const fetchNotifications = async (page = 0) => {
   } finally {
     loading.value = false
   }
+}
+
+// 탭 변경
+const changeTab = (tab) => {
+  currentTab.value = tab
+  fetchNotifications(0)
 }
 
 // 백엔드 NotificationType을 프론트 type으로 매핑
@@ -212,6 +241,37 @@ onMounted(() => {
 .btn-clear:hover {
   border-color: #3a3a3a;
   color: #ffffff;
+}
+
+.tab-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.tab-btn {
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: 20px;
+  color: #999;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  border-color: #3a3a3a;
+  color: #ffffff;
+}
+
+.tab-btn.active {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #0a0a0a;
 }
 
 .loading-state {

@@ -157,6 +157,11 @@ export const notificationApi = {
         const params = { page, size, sort }
         return api.get("/notifications", { params })
     },
+    // 읽지 않은 알림 목록 조회 (페이지네이션)
+    getUnreadNotifications: (page = 0, size = 20, sort = 'createdAt,desc') => {
+        const params = { page, size, sort }
+        return api.get("/notifications/unread", { params })
+    },
     // 알림 읽음 처리
     markAsRead: (notificationId) => api.patch(`/notifications/${notificationId}/read`),
     // 알림 삭제
