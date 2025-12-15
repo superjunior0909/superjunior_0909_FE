@@ -149,7 +149,11 @@
             <button class="btn btn-primary" @click="addNewAddress">주소 추가</button>
           </div>
           <div v-else class="address-list">
-            <div v-for="address in addressList" :key="address.addressId" class="address-item">
+            <div
+              v-for="address in addressList"
+              :key="address.addressId"
+              class="address-item"
+            >
               <div class="address-content">
                 <div class="address-main">
                   <p class="address-text">
@@ -157,16 +161,27 @@
                     <span class="phone-number">{{ address.phoneNumber }}</span>
                   </p>
                   <p class="address-full">
-                    <span v-if="address.postalCode" class="postal-code">[{{ address.postalCode }}]</span>
+                    <span v-if="address.postalCode" class="postal-code">
+                      [{{ address.postalCode }}]
+                    </span>
                     {{ address.address }} {{ address.addressDetail || '' }}
                   </p>
                 </div>
+
+                <!-- ❌ 삭제 버튼 -->
+                <button
+                  class="delete-btn"
+                  @click="deleteAddress(address.addressId)"
+                  :disabled="deletingAddressId === address.addressId"
+                >
+                  ✕
+                </button>
               </div>
             </div>
             <!-- 페이지네이션 -->
             <div v-if="addressPageInfo.totalPages > 1" class="pagination">
-              <button 
-                class="page-btn" 
+              <button
+                class="page-btn"
                 :disabled="addressPageInfo.currentPage === 0"
                 @click="loadAddresses(addressPageInfo.currentPage - 1)"
               >
@@ -175,7 +190,7 @@
               <span class="page-info">
                 {{ addressPageInfo.currentPage + 1 }} / {{ addressPageInfo.totalPages }}
               </span>
-              <button 
+              <button
                 class="page-btn"
                 :disabled="addressPageInfo.currentPage >= addressPageInfo.totalPages - 1"
                 @click="loadAddresses(addressPageInfo.currentPage + 1)"
@@ -210,7 +225,7 @@
           </div>
           <div class="form-group">
             <label>주소 *</label>
-            <AddressSearch 
+            <AddressSearch
               v-model="addressFormData"
               @update:modelValue="handleAddressUpdate"
             />
@@ -286,10 +301,10 @@ const isSeller = computed(() => {
   // localStorage와 API에서 가져온 role 모두 확인
   const localRole = localStorage.getItem('user_role')
   const role = userRole.value || localRole
-  
+
   // 대소문자 구분 없이 비교 (SELLER, seller, ROLE_SELLER 등 모두 처리)
   if (!role) return false
-  
+
   const roleUpper = role.toUpperCase()
   return roleUpper === 'SELLER' || roleUpper === 'ROLE_SELLER' || roleUpper.includes('SELLER')
 })
@@ -308,7 +323,7 @@ const loadAddresses = async (page = 0) => {
   try {
     const response = await authAPI.getAddresses(page, 10)
     console.log('주소 목록:', response)
-    
+
     if (response.data && Array.isArray(response.data.content)) {
       addressList.value = response.data.content
       addressPageInfo.value = {
@@ -332,6 +347,26 @@ const loadAddresses = async (page = 0) => {
     alert('주소 목록을 불러오는데 실패했습니다.')
   } finally {
     loadingAddresses.value = false
+  }
+}
+
+// 주소 삭제
+const deletingAddressId = ref()
+
+const deleteAddress = async (addressId) => {
+  if (!confirm('해당 주소를 삭제하시겠습니까?')) return
+
+  try {
+    deletingAddressId.value = addressId
+    await authAPI.deleteAddress(addressId)
+
+    // 현재 페이지 다시 로드
+    await loadAddresses()
+  } catch (e) {
+    console.error('주소 삭제 실패', e)
+    alert('주소 삭제에 실패했습니다.')
+  } finally {
+    deletingAddressId.value = null
   }
 }
 
@@ -437,7 +472,7 @@ const saveAddress = async () => {
       })
       alert('주소가 추가되었습니다.')
     }
-    
+
     closeEditAddressModal()
     loadAddresses(addressPageInfo.value.currentPage)
   } catch (error) {
@@ -456,12 +491,12 @@ const saveAddress = async () => {
 // 주문 ID 포맷팅 함수 (UUID를 읽기 쉬운 형식으로 변환)
 // const formatOrderId = (orderId) => {
 //   if (!orderId) return '-'
-  
+
 //   // 이미 포맷된 형식인지 확인 (ORD-로 시작하는 경우)
 //   if (typeof orderId === 'string' && orderId.startsWith('ORD-')) {
 //     return orderId
 //   }
-  
+
 //   // UUID인 경우 변환: ORD-년도-UUID마지막8자리
 //   if (typeof orderId === 'string' && orderId.includes('-')) {
 //     const currentYear = new Date().getFullYear()
@@ -469,7 +504,7 @@ const saveAddress = async () => {
 //     const uuidPart = orderId.replace(/-/g, '').slice(-8).toUpperCase()
 //     return `ORD-${currentYear}-${uuidPart}`
 //   }
-  
+
 //   // 그 외의 경우 그대로 반환
 //   return orderId
 // }
@@ -492,7 +527,7 @@ const formatDate = (dateString) => {
 // 주문 상태 텍스트 변환
 const getStatusText = (status) => {
   if (!status) return '알 수 없음'
-  
+
   const statusMap = {
     'IN_PROGRESS': '진행 중',
     'SUCCESS': '주문 성공',
@@ -513,7 +548,7 @@ const getStatusText = (status) => {
     'cancelled': '주문 취소',
     'refunded': '환불 완료'
   }
-  
+
   return statusMap[status] || status
 }
 
@@ -545,26 +580,26 @@ onMounted(async () => {
       console.error('Failed to parse user data:', e)
     }
   }
-  
+
   const savedEmail = localStorage.getItem('user_email')
   if (savedEmail) {
     userInfo.value.email = savedEmail
   }
-  
+
   // 프로필 API에서 정보 가져오기
   try {
     const profileResponse = await authAPI.getProfile()
     console.log('프로필 정보:', profileResponse)
-    
+
     const profileData = profileResponse.data || profileResponse
-    
+
     if (profileData) {
       // role 정보 업데이트 (판매자 여부 확인용)
       if (profileData.role) {
         userRole.value = profileData.role
         localStorage.setItem('user_role', profileData.role)
       }
-      
+
       // 사용자 정보 업데이트 (role, memberId 제외)
       if (profileData.email) {
         userInfo.value.email = profileData.email
@@ -585,25 +620,11 @@ onMounted(async () => {
       if (profileData.point !== undefined) {
         userInfo.value.point = profileData.point || 0
       }
-      
+
       // memberId는 localStorage에만 저장 (화면에는 표시 안 함)
       if (profileData.memberId) {
         localStorage.setItem('member_id', profileData.memberId)
       }
-    }
-
-    // 포인트 잔액 별도 조회
-    try {
-      const pointResponse = await authAPI.getPoints()
-      const pointData = pointResponse?.data || pointResponse
-      if (pointData?.pointBalance !== undefined) {
-        userInfo.value.point = pointData.pointBalance || 0
-      } else if (pointData?.point !== undefined) {
-        // 하위 호환
-        userInfo.value.point = pointData.point || 0
-      }
-    } catch (pointError) {
-      console.error('포인트 조회 실패:', pointError)
     }
   } catch (error) {
     console.error('프로필 조회 실패:', error)
@@ -624,10 +645,10 @@ const loadOrders = async () => {
   try {
     const response = await authAPI.getOrders()
     console.log('주문 내역:', response)
-    
+
     // 응답 데이터 구조에 따라 처리
     const ordersData = response.data || response
-    
+
     if (Array.isArray(ordersData)) {
       orderHistory.value = ordersData
     } else if (ordersData && Array.isArray(ordersData.content)) {
@@ -647,6 +668,39 @@ const loadOrders = async () => {
 </script>
 
 <style scoped>
+/* 주소 삭제 버튼 */
+.delete-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* hover 효과 */
+.delete-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #ffffff;
+}
+
+/* 비활성화 상태 */
+.delete-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .page {
   background: #0a0a0a;
   color: #ffffff;

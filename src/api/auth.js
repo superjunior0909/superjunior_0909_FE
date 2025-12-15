@@ -60,6 +60,11 @@ export const authAPI = {
         const response = await api.put(`/members/address/${addressId}`, addressData)
         return response.data;
     },
+    // 주소 삭제
+    deleteAddress: async(addressId) => {
+            const response = await api.delete(`/members/address/${addressId}`, addressId)
+            return response.data;
+        },
     // 판매자 신청
     sellerRegister: async(sellerData) => {
         const response = await api.post(`/members/seller`, {
