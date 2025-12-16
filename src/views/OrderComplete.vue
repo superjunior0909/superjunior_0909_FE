@@ -22,6 +22,8 @@ import { onMounted } from 'vue'
 onMounted(() => {
   // 주문 완료 후 장바구니 업데이트 이벤트 발생
   window.dispatchEvent(new CustomEvent('cart-updated'))
+  // 주문 완료 후 알림 업데이트 이벤트 발생 (주문 알림이 생성될 수 있음)
+  window.dispatchEvent(new CustomEvent('notification-changed'))
 })
 </script>
 

@@ -33,7 +33,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { cartApi } from '@/api/axios'
+import { notificationApi, cartApi } from '@/api/axios'
 
 const router = useRouter()
 
@@ -41,6 +41,7 @@ const isLoggedIn = ref(false)
 const cartCount = ref(0)
 const notificationCount = ref(0)
 let authCheckInterval = null
+let notificationCheckInterval = null
 let cartCountInterval = null
 
 const checkAuthStatus = async () => {
@@ -54,6 +55,24 @@ const checkAuthStatus = async () => {
     // 로그인 상태로 변경된 경우 장바구니와 알림 개수 로드
     await loadCartCount()
     loadNotificationCount()
+  }
+}
+
+const loadNotificationCount = async () => {
+  if (!isLoggedIn.value) {
+    notificationCount.value = 0
+    return
+  }
+
+  try {
+    const count = await notificationApi.getUnreadCount()
+    notificationCount.value = count
+
+
+
+  } catch (error) {
+    console.error('읽지 않은 알림 개수 조회 실패:', error)
+    // 에러가 나도 기존 값 유지
   }
 }
 
@@ -80,10 +99,6 @@ const handleCartUpdated = () => {
   loadCartCount()
 }
 
-const loadNotificationCount = () => {
-  // 추후 API 호출로 교체
-  notificationCount.value = 2
-}
 
 const goToCart = () => {
   router.push('/cart')
@@ -100,11 +115,30 @@ const goToMyPage = () => {
 const handleStorageChange = async (e) => {
   if (e.key === 'access_token') {
     await checkAuthStatus()
+    loadNotificationCount()
   }
 }
 
 const handleAuthChanged = async () => {
   await checkAuthStatus()
+  loadNotificationCount()
+}
+
+const handleNotificationChanged = () => {
+  loadNotificationCount()
+}
+
+// 페이지 포커스/가시성 변경 시 알림 개수 갱신
+const handleVisibilityChange = () => {
+  if (!document.hidden && isLoggedIn.value) {
+    loadNotificationCount()
+  }
+}
+
+const handleFocus = () => {
+  if (isLoggedIn.value) {
+    loadNotificationCount()
+  }
 }
 
 const handleLogout = () => {
@@ -132,18 +166,34 @@ onMounted(() => {
   
   // 커스텀 이벤트로 로그인 상태 변경 감지 (같은 탭에서의 변경)
   window.addEventListener('auth-changed', handleAuthChanged)
+
+  // 알림 상태 변경 감지 (알림을 읽었을 때)
+  window.addEventListener('notification-changed', handleNotificationChanged)
+
   
   // 장바구니 업데이트 이벤트 리스너
   window.addEventListener('cart-updated', handleCartUpdated)
   
   // 같은 탭에서의 변경 감지를 위한 주기적 체크
-  authCheckInterval = setInterval(async () => {
+ authCheckInterval = setInterval(() => {
     const token = localStorage.getItem('access_token')
     if (!!token !== isLoggedIn.value) {
-      await checkAuthStatus()
+      checkAuthStatus()
     }
   }, 1000)
   
+
+  // 읽지 않은 알림 개수 주기적 갱신 (10초마다)
+  notificationCheckInterval = setInterval(() => {
+    if (isLoggedIn.value) {
+      loadNotificationCount()
+    }
+  }, 10000)
+  
+  // 페이지 포커스/가시성 변경 시 알림 개수 갱신
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  window.addEventListener('focus', handleFocus)
+
   // 장바구니 개수 주기적 업데이트 (5초마다)
   cartCountInterval = setInterval(() => {
     if (isLoggedIn.value) {
@@ -155,9 +205,15 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('storage', handleStorageChange)
   window.removeEventListener('auth-changed', handleAuthChanged)
+  window.removeEventListener('notification-changed', handleNotificationChanged)
   window.removeEventListener('cart-updated', handleCartUpdated)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  window.removeEventListener('focus', handleFocus)
   if (authCheckInterval) {
     clearInterval(authCheckInterval)
+  }
+  if (notificationCheckInterval) {
+    clearInterval(notificationCheckInterval)
   }
   if (cartCountInterval) {
     clearInterval(cartCountInterval)
