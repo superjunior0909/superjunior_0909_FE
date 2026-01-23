@@ -7,6 +7,10 @@ const BASE_URL = process.env.NODE_ENV === 'production'
   ? "https://0982.store/api"
   : "/api";
 
+const AUTH_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://0982.store'
+  : ''
+
 // 단일 Axios 인스턴스
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -16,6 +20,15 @@ export const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+export const authClient = axios.create({
+  baseURL: AUTH_BASE_URL,
+  timeout: 30000,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
 
 /**
  * =========================
@@ -44,7 +57,7 @@ async function runRefresh() {
 
   refreshPromise = (async () => {
     try {
-      await api.get("/auth/refresh");
+      await authClient.get('/auth/refresh')
       flushQueueSuccess();
     } catch (e) {
       flushQueueFail(e);
