@@ -207,5 +207,22 @@ export const authAPI = {
         })
 
         return response.data.data
+    },
+
+    // 비밀번호 변경
+    changePassword: async(password, newPassword) => {
+        const response = await api.put(`/members/password`, {
+            password,
+            newPassword
+        })
+        return response.data;
+    },
+
+    // 회원 탈퇴
+    deleteAccount: async(password) => {
+        const response = await api.delete(`/members`, {
+            data: { password }
+        })
+        return response.data;
     }
 }

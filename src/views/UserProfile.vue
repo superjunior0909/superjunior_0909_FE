@@ -37,6 +37,13 @@
                 <span class="nav-icon">💰</span>
                 <span>포인트</span>
               </button>
+              <button
+                :class="['nav-item', { active: activeMenu === 'account-settings' }]"
+                @click="activeMenu = 'account-settings'"
+              >
+                <span class="nav-icon">⚙️</span>
+                <span>계정 설정</span>
+              </button>
             </div>
 
             <div class="nav-section">
@@ -184,6 +191,69 @@
                 <div class="balance-amount">{{ formatPrice(userInfo.point) }}P</div>
                 <router-link to="/point/charge" class="btn btn-primary">포인트 충전</router-link>
               </div>
+            </div>
+          </section>
+
+          <!-- 계정 설정 -->
+          <section v-if="activeMenu === 'account-settings'" class="content-section">
+            <h2 class="section-title">계정 설정</h2>
+
+            <!-- 비밀번호 변경 -->
+            <div class="panel">
+              <h3 class="panel-title">비밀번호 변경</h3>
+              <form @submit.prevent="handleChangePassword" class="settings-form">
+                <div class="form-group">
+                  <label>현재 비밀번호 *</label>
+                  <input
+                    v-model="passwordForm.currentPassword"
+                    type="password"
+                    placeholder="현재 비밀번호를 입력하세요"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label>새 비밀번호 *</label>
+                  <input
+                    v-model="passwordForm.newPassword"
+                    type="password"
+                    placeholder="새 비밀번호를 입력하세요"
+                    required
+                  />
+                  <p class="field-hint">8자리 이상, 영어+숫자+특수문자 각각 하나 이상 포함</p>
+                </div>
+                <div class="form-group">
+                  <label>새 비밀번호 확인 *</label>
+                  <input
+                    v-model="passwordForm.confirmPassword"
+                    type="password"
+                    placeholder="새 비밀번호를 다시 입력하세요"
+                    required
+                  />
+                </div>
+                <div class="form-actions">
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    :disabled="changingPassword"
+                  >
+                    {{ changingPassword ? '변경 중...' : '비밀번호 변경' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- 회원 탈퇴 -->
+            <div class="panel danger-zone">
+              <h3 class="panel-title">회원 탈퇴</h3>
+              <p class="danger-warning">
+                회원 탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.
+              </p>
+              <button
+                class="btn btn-danger"
+                @click="showDeleteAccountModal = true"
+              >
+                회원 탈퇴
+              </button>
             </div>
           </section>
 
@@ -619,6 +689,54 @@
         </div>
       </div>
     </div>
+
+    <!-- 회원 탈퇴 확인 모달 -->
+    <div
+      v-if="showDeleteAccountModal"
+      class="modal-overlay"
+      @click.self="showDeleteAccountModal = false"
+    >
+      <div class="delete-account-modal">
+        <div class="modal-header">
+          <h2>회원 탈퇴</h2>
+          <button class="close-btn" @click="showDeleteAccountModal = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="warning-text">
+            정말로 탈퇴하시겠습니까?<br />
+            탈퇴 후에는 모든 데이터가 삭제되며 복구할 수 없습니다.
+          </p>
+          <form @submit.prevent="handleDeleteAccount" class="delete-form">
+            <div class="form-group">
+              <label>비밀번호 확인 *</label>
+              <input
+                v-model="deleteAccountForm.password"
+                type="password"
+                placeholder="비밀번호를 입력하세요"
+                required
+              />
+            </div>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-outline"
+                @click="showDeleteAccountModal = false"
+                :disabled="deletingAccount"
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                class="btn btn-danger"
+                :disabled="deletingAccount"
+              >
+                {{ deletingAccount ? '탈퇴 중...' : '탈퇴하기' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -657,6 +775,21 @@ const profileEditForm = ref({
   phoneNumber: ''
 })
 const savingProfile = ref(false)
+
+// 계정 설정 - 비밀번호 변경
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+const changingPassword = ref(false)
+
+// 계정 설정 - 회원 탈퇴
+const showDeleteAccountModal = ref(false)
+const deleteAccountForm = ref({
+  password: ''
+})
+const deletingAccount = ref(false)
 
 const formatPrice = (value) => {
   const numberValue = Number(value)
@@ -1275,6 +1408,75 @@ const saveProfile = async () => {
     alert(error.response?.data?.message || '프로필 수정에 실패했습니다.')
   } finally {
     savingProfile.value = false
+  }
+}
+
+// 비밀번호 변경
+const handleChangePassword = async () => {
+  // 입력 검증
+  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
+    alert('모든 필드를 입력해주세요.')
+    return
+  }
+
+  // 새 비밀번호 확인
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    alert('새 비밀번호가 일치하지 않습니다.')
+    return
+  }
+
+  // 비밀번호 유효성 검사 (8자리 이상, 영어+숫자+특수문자)
+  const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-={}[\]:;"'<>?,./]).{8,}$/
+  if (!passwordPattern.test(passwordForm.value.newPassword)) {
+    alert('비밀번호는 8자리 이상이며 영어, 숫자, 특수문자를 각각 하나 이상 포함해야 합니다.')
+    return
+  }
+
+  changingPassword.value = true
+  try {
+    await authAPI.changePassword(
+      passwordForm.value.currentPassword,
+      passwordForm.value.newPassword
+    )
+
+    alert('비밀번호가 변경되었습니다.')
+
+    // 폼 초기화
+    passwordForm.value = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
+  } catch (error) {
+    console.error('비밀번호 변경 실패:', error)
+    alert(error.response?.data?.message || '비밀번호 변경에 실패했습니다.')
+  } finally {
+    changingPassword.value = false
+  }
+}
+
+// 회원 탈퇴
+const handleDeleteAccount = async () => {
+  if (!deleteAccountForm.value.password) {
+    alert('비밀번호를 입력해주세요.')
+    return
+  }
+
+  deletingAccount.value = true
+  try {
+    await authAPI.deleteAccount(deleteAccountForm.value.password)
+
+    alert('회원 탈퇴가 완료되었습니다.')
+
+    // 로그아웃 처리
+    localStorage.clear()
+    router.push('/')
+  } catch (error) {
+    console.error('회원 탈퇴 실패:', error)
+    alert(error.response?.data?.message || '회원 탈퇴에 실패했습니다.')
+  } finally {
+    deletingAccount.value = false
+    showDeleteAccountModal.value = false
   }
 }
 
@@ -2628,6 +2830,125 @@ textarea:focus {
   font-size: 16px;
   font-weight: 700;
   color: #ffffff;
+}
+
+/* 계정 설정 */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panel-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 20px 0;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #999;
+  margin: 6px 0 0 0;
+}
+
+.danger-zone {
+  background: rgba(255, 67, 54, 0.05) !important;
+  border: 1px solid rgba(255, 67, 54, 0.2) !important;
+}
+
+.danger-warning {
+  font-size: 14px;
+  color: #ff9999;
+  margin: 0 0 16px 0;
+  line-height: 1.6;
+}
+
+.btn-danger {
+  background: rgba(255, 67, 54, 0.15);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 67, 54, 0.3);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: rgba(255, 67, 54, 0.25);
+  border-color: rgba(255, 67, 54, 0.5);
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 회원 탈퇴 모달 */
+.delete-account-modal {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+}
+
+.delete-account-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.delete-account-modal .modal-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.delete-account-modal .close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: #ffffff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.delete-account-modal .close-btn:hover {
+  background: #2a2a2a;
+}
+
+.delete-account-modal .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.delete-account-modal .warning-text {
+  font-size: 15px;
+  color: #ff9999;
+  line-height: 1.6;
+  margin: 0;
+  text-align: center;
+}
+
+.delete-account-modal .delete-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 
