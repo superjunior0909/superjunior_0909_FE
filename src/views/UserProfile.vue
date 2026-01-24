@@ -48,17 +48,17 @@
                 <span class="nav-icon">📦</span>
                 <span>주문 내역</span>
               </button>
+              <button
+                :class="['nav-item', { active: activeMenu === 'cancelled-orders' }]"
+                @click="activeMenu = 'cancelled-orders'"
+              >
+                <span class="nav-icon">❌</span>
+                <span>주문 취소내역</span>
+              </button>
             </div>
 
             <div v-if="isSeller" class="nav-section">
               <h4 class="nav-section-title">판매자</h4>
-              <button
-                :class="['nav-item', { active: activeMenu === 'seller-orders' }]"
-                @click="activeMenu = 'seller-orders'"
-              >
-                <span class="nav-icon">🛒</span>
-                <span>받은 주문</span>
-              </button>
               <button
                 class="nav-item"
                 @click="goToSellerPage"
@@ -252,19 +252,19 @@
             </div>
           </section>
 
-          <!-- 주문 내역 -->
+          <!-- 주문 내역 (취소 제외) -->
           <section v-if="activeMenu === 'orders'" class="content-section">
             <h2 class="section-title">주문 내역</h2>
             <div class="panel">
               <div v-if="loadingOrders" class="loading-orders">
                 <p>주문 내역을 불러오는 중...</p>
               </div>
-              <div v-else-if="orderHistory.length === 0" class="empty-orders">
+              <div v-else-if="activeOrders.length === 0" class="empty-orders">
                 <p>주문 내역이 없습니다</p>
                 <router-link to="/products" class="btn btn-outline">상품 둘러보기</router-link>
               </div>
               <div v-else class="order-list">
-                <div v-for="order in orderHistory" :key="order.orderId" class="order-item">
+                <div v-for="order in activeOrders" :key="order.orderId" class="order-item">
                   <div class="order-header">
                     <div>
                       <span class="order-date">{{ formatDate(order.createdAt) }}</span>
@@ -335,26 +335,38 @@
             </div>
           </section>
 
-          <!-- 판매자용 주문 목록 섹션 -->
-          <section v-if="activeMenu === 'seller-orders'" class="content-section">
-            <h2 class="section-title">받은 주문 내역 (판매자)</h2>
+          <!-- 주문 취소내역 -->
+          <section v-if="activeMenu === 'cancelled-orders'" class="content-section">
+            <h2 class="section-title">주문 취소내역</h2>
             <div class="panel">
-              <div v-if="loadingSellerOrders" class="loading-orders">
-                <p>주문 내역을 불러오는 중...</p>
+              <div v-if="loadingOrders" class="loading-orders">
+                <p>주문 취소내역을 불러오는 중...</p>
               </div>
-              <div v-else-if="sellerOrderHistory.length === 0" class="empty-orders">
-                <p>받은 주문 내역이 없습니다</p>
+              <div v-else-if="cancelledOrders.length === 0" class="empty-orders">
+                <p>주문 취소내역이 없습니다</p>
               </div>
               <div v-else class="order-list">
-                <div v-for="order in sellerOrderHistory" :key="order.orderId" class="order-item">
+                <div v-for="order in cancelledOrders" :key="order.orderId" class="order-item">
                   <div class="order-header">
                     <div>
                       <span class="order-date">{{ formatDate(order.createdAt) }}</span>
                       <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
                     </div>
-                    <span class="order-status" :class="order.status?.toLowerCase()">{{ getStatusText(order.status) }}</span>
+                    <span class="order-status cancelled">{{ getStatusText(order.status) }}</span>
                   </div>
-                  <div class="order-summary">
+                  <div v-if="order.products && order.products.length > 0" class="order-products">
+                    <div v-for="product in order.products" :key="product.id" class="order-product">
+                      <div class="product-details">
+                        <h4>{{ product.title }}</h4>
+                        <p class="product-option">{{ product.option }}</p>
+                        <div class="product-meta">
+                          <span>수량: {{ product.quantity }}개</span>
+                          <span class="product-price">₩{{ formatPrice(product.price) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="order-summary">
                     <p class="order-quantity">수량: {{ order.quantity }}개</p>
                     <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
                   </div>
@@ -365,28 +377,6 @@
                     </div>
                   </div>
                 </div>
-              </div>
-              <!-- 판매자 주문 페이징 -->
-              <div v-if="sellerOrderPageInfo.totalPages > 1" class="pagination">
-                <button
-                  class="page-btn"
-                  :disabled="sellerOrderPageInfo.currentPage === 0"
-                  @click="loadSellerOrders(sellerOrderPageInfo.currentPage - 1)"
-                >
-                  이전
-                </button>
-
-                <span class="page-info">
-                  {{ sellerOrderPageInfo.currentPage + 1 }} / {{ sellerOrderPageInfo.totalPages }}
-                </span>
-
-                <button
-                  class="page-btn"
-                  :disabled="sellerOrderPageInfo.currentPage >= sellerOrderPageInfo.totalPages - 1"
-                  @click="loadSellerOrders(sellerOrderPageInfo.currentPage + 1)"
-                >
-                  다음
-                </button>
               </div>
             </div>
           </section>
@@ -766,10 +756,6 @@ const addressFormData = ref({
 const orderHistory = ref([])
 const loadingOrders = ref(false)
 
-// 판매자용 주문 목록
-const sellerOrderHistory = ref([])
-const loadingSellerOrders = ref(false)
-
 const userRole = ref(null)
 
 const isSeller = computed(() => {
@@ -782,6 +768,22 @@ const isSeller = computed(() => {
 
   const roleUpper = role.toUpperCase()
   return roleUpper === 'SELLER' || roleUpper === 'ROLE_SELLER' || roleUpper.includes('SELLER')
+})
+
+// 주문 내역 (취소 제외)
+const activeOrders = computed(() => {
+  return orderHistory.value.filter(order => {
+    const status = order.status?.toUpperCase()
+    return status !== 'CANCELLED' && status !== 'REFUNDED'
+  })
+})
+
+// 취소된 주문 내역
+const cancelledOrders = computed(() => {
+  return orderHistory.value.filter(order => {
+    const status = order.status?.toUpperCase()
+    return status === 'CANCELLED' || status === 'REFUNDED'
+  })
 })
 
 const goToSellerPage = () => {
@@ -1115,11 +1117,6 @@ onMounted(async () => {
 
   // 주문 내역 가져오기
   await loadOrders(0)
-
-  // 판매자인 경우 판매자 주문 목록도 가져오기
-  if (isSeller.value) {
-    await loadSellerOrders(0)
-  }
 })
 
 const orderPageInfo = ref({
@@ -1153,41 +1150,6 @@ const loadOrders = async (page = 0) => {
     loadingOrders.value = false
   }
 }
-
-// 판매자용 주문 목록 페이징 정보
-const sellerOrderPageInfo = ref({
-  currentPage: 0,
-  totalPages: 0,
-  totalElements: 0,
-  size: 5
-})
-
-// 판매자용 주문 목록 불러오기
-const loadSellerOrders = async (page = 0) => {
-  loadingSellerOrders.value = true
-  try {
-    const pageData = await authAPI.getSellerOrders({
-      page,
-      size: sellerOrderPageInfo.value.size,
-      sort: 'createdAt,asc'
-    })
-
-    sellerOrderHistory.value = pageData.content
-
-    sellerOrderPageInfo.value = {
-      currentPage: page,
-      totalPages: pageData.totalPages,
-      totalElements: pageData.totalElements,
-      size: pageData.size
-    }
-  } catch (e) {
-    console.error('판매자 주문 내역 조회 실패', e)
-    sellerOrderHistory.value = []
-  } finally {
-    loadingSellerOrders.value = false
-  }
-}
-
 
 const closeOrderDetailModal = () => {
   showOrderDetailModal.value = false
@@ -2081,6 +2043,13 @@ textarea:focus {
   background: rgba(255, 71, 87, 0.2);
   color: #ff4757;
   border: 1px solid #ff4757;
+}
+
+.order-status.cancelled,
+.order-status.refunded {
+  background: rgba(150, 150, 150, 0.2);
+  color: #999;
+  border: 1px solid #666;
 }
 
 .order-products {
