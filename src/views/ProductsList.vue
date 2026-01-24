@@ -13,6 +13,105 @@
       </div>
     </section>
 
+    <!-- 맞춤형 추천 -->
+    <section v-if="recommendedLoading || recommendedProducts.length" class="product-grid-section recommend-section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">
+            맞춤형 추천
+            <span v-if="recommendedReason" class="section-reason">{{ recommendedReason }}</span>
+          </h2>
+        </div>
+        <div v-if="recommendedLoading" class="product-grid">
+          <article
+            v-for="n in 3"
+            :key="`skeleton-${n}`"
+            class="product-card skeleton-card"
+          >
+            <div class="image-wrapper skeleton-block"></div>
+            <div class="card-body">
+              <div class="skeleton-line short"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
+              <div class="skeleton-line"></div>
+            </div>
+          </article>
+        </div>
+        <div v-else class="product-grid">
+          <article
+            v-for="product in recommendedProducts"
+            :key="product.id"
+            class="product-card"
+            @click="goToDetail(product.id)"
+          >
+            <div class="image-wrapper">
+              <img :src="product.image" :alt="product.title" />
+
+              <div class="badge-group">
+                <span
+                  v-for="badge in product.badges"
+                  :key="badge"
+                  class="badge"
+                >
+                  {{ badge }}
+                </span>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <p class="category">{{ product.category }}</p>
+              <h2>{{ product.title }}</h2>
+              <p class="subtitle">{{ product.subtitle }}</p>
+
+              <div class="price-row">
+                <p class="current-price">
+                  ₩{{ product.currentPrice.toLocaleString() }}
+                </p>
+                <p class="meta">
+                  <span class="discount">{{ product.discountRate }}% OFF</span>
+                  <span class="original">
+                    ₩{{ product.originalPrice.toLocaleString() }}
+                  </span>
+                </p>
+              </div>
+
+              <div class="progress">
+                <div class="progress-head">
+                  <span>{{ product.currentCount }}명 참여</span>
+                  <span>목표 {{ product.targetCount }}명</span>
+                </div>
+                <div class="progress-bar">
+                  <div
+                    class="progress-fill"
+                    :style="{ width: `${Math.min(product.currentCount / product.targetCount * 100, 100)}%` }"
+                  ></div>
+                </div>
+              </div>
+
+              <div class="card-footer">
+                <span class="time">⏰ {{ product.timeLeft }}</span>
+                <div class="footer-actions">
+                  <button 
+                    class="btn btn-outline btn-sm"
+                    @click.stop="addToCart(product)"
+                  >
+                    장바구니
+                  </button>
+                  <button 
+                    class="btn btn-primary btn-sm"
+                    @click.stop="goToDetail(product.id)"
+                  >
+                    참가하기
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <!-- FILTER -->
     <section class="filters">
       <div class="container">
@@ -217,6 +316,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { groupPurchaseApi, cartApi } from '@/api/axios'
+import { authAPI as auth } from '@/api/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -226,6 +326,9 @@ const router = useRouter()
  * ====================== */
 const products = ref([])
 const loading = ref(false)
+const recommendedProducts = ref([])
+const recommendedReason = ref('')
+const recommendedLoading = ref(false)
 
 const keyword = ref('')
 const selectedStatus = ref('OPEN')
@@ -285,6 +388,7 @@ const secondaryCategories = computed(() => allCategories.slice(4))
 const filterByCategory = (value) => {
   selectedCategory.value = value
   loadProducts()
+  fetchRecommendedProducts()
 }
 
 // 카테고리별 기본 이미지
@@ -364,6 +468,26 @@ const mapToProductCard = (gp) => {
   }
 }
 
+const fetchRecommendedProducts = async () => {
+  recommendedLoading.value = true
+  try {
+    const res = await auth.searchAIRecommandPurchases({
+      keyword: keyword.value,
+      category: selectedCategory.value
+    })
+    const items = res?.groupPurchase ?? []
+    recommendedProducts.value = items.slice(0, 3).map(mapToProductCard)
+    recommendedReason.value = res?.reason ?? ''
+    console.log('추천 상품 검색 완료,{}', recommendedProducts.value)
+  } catch (e) {
+    console.error('추천 상품 조회 실패', e)
+    recommendedProducts.value = []
+    recommendedReason.value = ''
+  } finally {
+    recommendedLoading.value = false
+  }
+}
+
 /* ======================
  * ES SEARCH
  * ====================== */
@@ -412,7 +536,6 @@ const resetPageAndReload = () => {
 watch(sortBy, resetPageAndReload)
 watch(selectedStatus, resetPageAndReload)
 watch(selectedCategory, resetPageAndReload)
-watch(keyword, resetPageAndReload)
 
 /* ======================
  * EVENTS
@@ -422,7 +545,10 @@ const setStatus = (status) => {
   loadProducts()
 }
 
-const search = () => loadProducts()
+const search = () => {
+  loadProducts()
+  fetchRecommendedProducts()
+}
 
 const goToDetail = (id) => {
   router.push({ name: 'group-purchase-detail', params: { id } })
@@ -459,6 +585,7 @@ watch(
 
     // 🔥 실제 검색 실행
     loadProducts()
+    fetchRecommendedProducts()
   },
   { immediate: true }
 )
@@ -466,7 +593,10 @@ watch(
 /* ======================
  * INIT
  * ====================== */
-onMounted(loadProducts)
+onMounted(() => {
+  loadProducts()
+  fetchRecommendedProducts()
+})
 </script>
 
 <style scoped>
@@ -501,6 +631,63 @@ onMounted(loadProducts)
 
 .page-hero .subtitle {
   color: #999;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: #ffffff;
+}
+
+.section-reason {
+  margin-left: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #999;
+}
+
+.skeleton-card {
+  pointer-events: none;
+}
+
+.skeleton-block {
+  background: linear-gradient(90deg, #1f1f1f 0%, #2a2a2a 50%, #1f1f1f 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background: linear-gradient(90deg, #1f1f1f 0%, #2a2a2a 50%, #1f1f1f 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.recommend-section {
+  padding: 24px 0 40px;
 }
 
 .filters {

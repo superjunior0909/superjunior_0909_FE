@@ -160,11 +160,8 @@ api.interceptors.response.use(
 export const productApi = {
   createProduct: (data) => api.post("/products", data),
   getProductById: (productId) => api.get(`/products/${productId}`),
-  getProducts: () => api.get("/products"),
-
-  // 🔥 검색 서비스 기준 (판매자 상품 검색)
-  getMyProducts: (params = {}) =>
-    api.get("/searches/product/search", { params }),
+  getProducts: (params = {}) =>
+    api.get('/products', { params: { size: 1000, ...params } }),
 
   updateProduct: (productId, data) =>
     api.patch(`/products/${productId}`, data),
