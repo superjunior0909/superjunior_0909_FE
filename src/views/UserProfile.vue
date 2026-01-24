@@ -152,7 +152,62 @@
           </button>
         </div>
 
-        
+        <!-- 판매자용 주문 목록 섹션 -->
+        <div v-if="isSeller" class="panel">
+          <h3>받은 주문 내역 (판매자)</h3>
+          <div v-if="loadingSellerOrders" class="loading-orders">
+            <p>주문 내역을 불러오는 중...</p>
+          </div>
+          <div v-else-if="sellerOrderHistory.length === 0" class="empty-orders">
+            <p>받은 주문 내역이 없습니다</p>
+          </div>
+          <div v-else class="order-list">
+            <div v-for="order in sellerOrderHistory" :key="order.orderId" class="order-item">
+              <div class="order-header">
+                <div>
+                  <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+                  <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
+                </div>
+                <span class="order-status" :class="order.status?.toLowerCase()">{{ getStatusText(order.status) }}</span>
+              </div>
+              <div class="order-summary">
+                <p class="order-quantity">수량: {{ order.quantity }}개</p>
+                <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
+              </div>
+              <div class="order-footer">
+                <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
+                <div class="order-actions">
+                  <button class="btn btn-outline btn-sm" @click="viewOrderDetail(order.orderId)">상세보기</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 판매자 주문 페이징 -->
+        <div v-if="isSeller && sellerOrderPageInfo.totalPages > 1" class="pagination">
+          <button
+            class="page-btn"
+            :disabled="sellerOrderPageInfo.currentPage === 0"
+            @click="loadSellerOrders(sellerOrderPageInfo.currentPage - 1)"
+          >
+            이전
+          </button>
+
+          <span class="page-info">
+            {{ sellerOrderPageInfo.currentPage + 1 }} / {{ sellerOrderPageInfo.totalPages }}
+          </span>
+
+          <button
+            class="page-btn"
+            :disabled="sellerOrderPageInfo.currentPage >= sellerOrderPageInfo.totalPages - 1"
+            @click="loadSellerOrders(sellerOrderPageInfo.currentPage + 1)"
+          >
+            다음
+          </button>
+        </div>
+
+
       </div>
     </div>
 
@@ -509,6 +564,10 @@ const addressFormData = ref({
 const orderHistory = ref([])
 const loadingOrders = ref(false)
 
+// 판매자용 주문 목록
+const sellerOrderHistory = ref([])
+const loadingSellerOrders = ref(false)
+
 const userRole = ref(null)
 
 const isSeller = computed(() => {
@@ -860,6 +919,11 @@ onMounted(async () => {
 
   // 주문 내역 가져오기
   await loadOrders(0)
+
+  // 판매자인 경우 판매자 주문 목록도 가져오기
+  if (isSeller.value) {
+    await loadSellerOrders(0)
+  }
 })
 
 const orderPageInfo = ref({
@@ -891,6 +955,40 @@ const loadOrders = async (page = 0) => {
     orderHistory.value = []
   } finally {
     loadingOrders.value = false
+  }
+}
+
+// 판매자용 주문 목록 페이징 정보
+const sellerOrderPageInfo = ref({
+  currentPage: 0,
+  totalPages: 0,
+  totalElements: 0,
+  size: 5
+})
+
+// 판매자용 주문 목록 불러오기
+const loadSellerOrders = async (page = 0) => {
+  loadingSellerOrders.value = true
+  try {
+    const pageData = await authAPI.getSellerOrders({
+      page,
+      size: sellerOrderPageInfo.value.size,
+      sort: 'createdAt,asc'
+    })
+
+    sellerOrderHistory.value = pageData.content
+
+    sellerOrderPageInfo.value = {
+      currentPage: page,
+      totalPages: pageData.totalPages,
+      totalElements: pageData.totalElements,
+      size: pageData.size
+    }
+  } catch (e) {
+    console.error('판매자 주문 내역 조회 실패', e)
+    sellerOrderHistory.value = []
+  } finally {
+    loadingSellerOrders.value = false
   }
 }
 

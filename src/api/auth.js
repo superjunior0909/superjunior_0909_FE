@@ -106,9 +106,15 @@ export const authAPI = {
         return response.data;
     },
     // 판매자 주문 내역 조회
-    getSellerOrders: async() => {
-        const response = await api.get(`/orders/seller`)
-        return response.data;
+    getSellerOrders: async({
+      page = 0,
+      size = 20,
+      sort = 'createdAt,asc'
+    } = {}) => {
+      const response = await api.get('/orders/seller', {
+        params: { page, size, sort }
+      })
+      return response.data.data
     },
     // 공동 구매 목록 조회
     getGroupPurchases: async() => {
