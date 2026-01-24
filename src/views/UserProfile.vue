@@ -199,44 +199,52 @@
             <h2 class="section-title">계정 설정</h2>
 
             <!-- 비밀번호 변경 -->
-            <div class="panel">
-              <h3 class="panel-title">비밀번호 변경</h3>
-              <form @submit.prevent="handleChangePassword" class="settings-form">
-                <div class="form-group">
-                  <label>현재 비밀번호 *</label>
+            <div class="panel account-panel">
+              <div class="panel-header">
+                <h3>비밀번호 변경</h3>
+              </div>
+              <form @submit.prevent="handleChangePassword" class="password-change-form">
+                <div class="password-field-group">
+                  <label class="password-label">현재 비밀번호</label>
                   <input
                     v-model="passwordForm.currentPassword"
                     type="password"
+                    class="password-input"
                     placeholder="현재 비밀번호를 입력하세요"
                     required
                   />
                 </div>
-                <div class="form-group">
-                  <label>새 비밀번호 *</label>
+
+                <div class="password-field-group">
+                  <label class="password-label">새 비밀번호</label>
                   <input
                     v-model="passwordForm.newPassword"
                     type="password"
+                    class="password-input"
                     placeholder="새 비밀번호를 입력하세요"
                     required
                   />
-                  <p class="field-hint">8자리 이상, 영어+숫자+특수문자 각각 하나 이상 포함</p>
+                  <p class="password-hint">영문, 숫자, 특수문자 포함 8자 이상</p>
                 </div>
-                <div class="form-group">
-                  <label>새 비밀번호 확인 *</label>
+
+                <div class="password-field-group">
+                  <label class="password-label">새 비밀번호 확인</label>
                   <input
                     v-model="passwordForm.confirmPassword"
                     type="password"
+                    class="password-input"
                     placeholder="새 비밀번호를 다시 입력하세요"
                     required
                   />
                 </div>
-                <div class="form-actions">
+
+                <div class="password-form-footer">
                   <button
                     type="submit"
-                    class="btn btn-primary"
+                    class="btn btn-primary btn-password-submit"
                     :disabled="changingPassword"
                   >
-                    {{ changingPassword ? '변경 중...' : '비밀번호 변경' }}
+                    {{ changingPassword ? '변경 중...' : '변경하기' }}
                   </button>
                 </div>
               </form>
@@ -244,16 +252,24 @@
 
             <!-- 회원 탈퇴 -->
             <div class="panel danger-zone">
-              <h3 class="panel-title">회원 탈퇴</h3>
-              <p class="danger-warning">
-                회원 탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.
-              </p>
-              <button
-                class="btn btn-danger"
-                @click="showDeleteAccountModal = true"
-              >
-                회원 탈퇴
-              </button>
+              <div class="panel-header">
+                <h3>회원 탈퇴</h3>
+              </div>
+              <div class="danger-content">
+                <div class="danger-info">
+                  <p class="danger-title">계정을 삭제하시겠습니까?</p>
+                  <p class="danger-description">
+                    회원 탈퇴 시 모든 개인정보 및 주문 내역이 영구적으로 삭제되며,<br />
+                    이 작업은 취소할 수 없습니다.
+                  </p>
+                </div>
+                <button
+                  class="btn btn-danger"
+                  @click="showDeleteAccountModal = true"
+                >
+                  회원 탈퇴
+                </button>
+              </div>
             </div>
           </section>
 
@@ -2833,52 +2849,124 @@ textarea:focus {
 }
 
 /* 계정 설정 */
-.settings-form {
+.account-panel {
+  margin-bottom: 24px;
+}
+
+/* 비밀번호 변경 폼 */
+.password-change-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.panel-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #ffffff;
-  margin: 0 0 20px 0;
+.password-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.field-hint {
-  font-size: 12px;
+.password-label {
+  font-size: 13px;
+  font-weight: 500;
   color: #999;
-  margin: 6px 0 0 0;
+  letter-spacing: -0.2px;
+}
+
+.password-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.password-input::placeholder {
+  color: #555;
+}
+
+.password-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #4a4a4a;
+}
+
+.password-hint {
+  font-size: 12px;
+  color: #777;
+  margin: 0;
+  line-height: 1.4;
+  padding-left: 2px;
+}
+
+.password-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.btn-password-submit {
+  min-width: 120px;
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .danger-zone {
-  background: rgba(255, 67, 54, 0.05) !important;
-  border: 1px solid rgba(255, 67, 54, 0.2) !important;
+  background: rgba(255, 67, 54, 0.04) !important;
+  border: 1px solid rgba(255, 67, 54, 0.15) !important;
+  margin-top: 24px;
 }
 
-.danger-warning {
+.danger-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.danger-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.danger-title {
   font-size: 14px;
-  color: #ff9999;
-  margin: 0 0 16px 0;
+  font-weight: 600;
+  color: #ff8888;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.danger-description {
+  font-size: 13px;
+  color: #999;
+  margin: 0;
   line-height: 1.6;
 }
 
 .btn-danger {
-  background: rgba(255, 67, 54, 0.15);
+  background: transparent;
   color: #ff6b6b;
   border: 1px solid rgba(255, 67, 54, 0.3);
-  padding: 12px 24px;
+  padding: 11px 24px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  align-self: flex-start;
 }
 
 .btn-danger:hover {
-  background: rgba(255, 67, 54, 0.25);
+  background: rgba(255, 67, 54, 0.1);
   border-color: rgba(255, 67, 54, 0.5);
+  color: #ff5555;
 }
 
 .btn-danger:disabled {
@@ -2891,24 +2979,25 @@ textarea:focus {
   background: #1a1a1a;
   border: 1px solid #2a2a2a;
   border-radius: 16px;
-  padding: 32px;
-  max-width: 500px;
+  padding: 0;
+  max-width: 480px;
   width: 90%;
+  overflow: hidden;
 }
 
 .delete-account-modal .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  padding: 24px 28px;
   border-bottom: 1px solid #2a2a2a;
+  background: rgba(255, 67, 54, 0.05);
 }
 
 .delete-account-modal .modal-header h2 {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: #ff6b6b;
   margin: 0;
 }
 
@@ -2917,7 +3006,7 @@ textarea:focus {
   height: 32px;
   border-radius: 8px;
   background: transparent;
-  border: 1px solid #2a2a2a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #ffffff;
   font-size: 20px;
   cursor: pointer;
@@ -2925,13 +3014,16 @@ textarea:focus {
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .delete-account-modal .close-btn:hover {
-  background: #2a2a2a;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .delete-account-modal .modal-body {
+  padding: 28px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -2940,15 +3032,27 @@ textarea:focus {
 .delete-account-modal .warning-text {
   font-size: 15px;
   color: #ff9999;
-  line-height: 1.6;
+  line-height: 1.7;
   margin: 0;
   text-align: center;
+  padding: 16px 0;
 }
 
 .delete-account-modal .delete-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+}
+
+.delete-account-modal .form-group {
+  margin-bottom: 0;
+}
+
+.delete-account-modal .form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 8px;
 }
 
 
@@ -2968,6 +3072,49 @@ textarea:focus {
 
   .btn-search-postal {
     width: 100%;
+  }
+
+  .delete-account-modal {
+    max-width: 95%;
+  }
+
+  .delete-account-modal .modal-header {
+    padding: 20px;
+  }
+
+  .delete-account-modal .modal-body {
+    padding: 20px;
+  }
+
+  .password-form-footer {
+    justify-content: stretch;
+  }
+
+  .btn-password-submit {
+    flex: 1;
+    width: 100%;
+  }
+
+  .password-input {
+    padding: 12px 14px;
+    font-size: 15px;
+  }
+
+  .password-label {
+    font-size: 12px;
+  }
+
+  .danger-description br {
+    display: none;
+  }
+
+  .danger-description {
+    font-size: 12px;
+  }
+
+  .btn-danger {
+    width: 100%;
+    padding: 13px 24px;
   }
 }
 </style>
