@@ -3547,60 +3547,165 @@ const saveNotificationSettings = async () => {
 }
 
 .seller-order-card {
-  background: #111111;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  padding: 20px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.seller-order-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
 }
 
 .seller-order-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .seller-order-dates {
-  color: #a0a0a0;
+  color: #999;
   font-size: 13px;
+  font-weight: 500;
+}
+
+.seller-order-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .seller-order-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .seller-order-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   color: #ffffff;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
 }
 
 .seller-order-sub {
   margin: 0;
-  color: #a0a0a0;
+  color: #888;
   font-size: 13px;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  display: inline-block;
+  width: fit-content;
+  font-weight: 500;
 }
 
 .seller-order-price {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: baseline;
+  margin-top: 12px;
+}
+
+.seller-order-price .current-price {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.seller-order-price .original-price {
+  font-size: 16px;
+  color: #666666;
+  text-decoration: line-through;
 }
 
 .seller-order-progress {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #a0a0a0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease;
 }
 
 .seller-order-actions {
   display: flex;
   gap: 10px;
+  margin-top: 8px;
+}
+
+.seller-order-actions .btn {
+  flex: 1;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.seller-order-actions .btn:hover {
+  transform: translateY(-1px);
+}
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.status-badge.open {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(102, 187, 106, 0.2) 100%);
+  color: #66BB6A;
+  border-color: rgba(102, 187, 106, 0.3);
+}
+
+.status-badge.closed {
+  background: linear-gradient(135deg, rgba(158, 158, 158, 0.2) 0%, rgba(117, 117, 117, 0.2) 100%);
+  color: #999;
+  border-color: rgba(158, 158, 158, 0.3);
+}
+
+.status-badge.pending {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 179, 0, 0.2) 100%);
+  color: #FFC107;
+  border-color: rgba(255, 193, 7, 0.3);
 }
 
 .order-dropdown {
