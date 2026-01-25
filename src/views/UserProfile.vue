@@ -380,7 +380,10 @@
                   <div class="setting-info">
                     <span class="setting-icon">{{ getNotificationIcon(setting.channel) }}</span>
                     <div class="setting-details">
-                      <h4 class="setting-title">{{ getNotificationTitle(setting.channel) }}</h4>
+                      <h4 class="setting-title">
+                        {{ getNotificationTitle(setting.channel) }}
+                        <span v-if="setting.channel === 'IN_APP'" class="required-badge">필수</span>
+                      </h4>
                       <p class="setting-description">{{ getNotificationDescription(setting.channel) }}</p>
                     </div>
                   </div>
@@ -389,8 +392,9 @@
                       type="checkbox"
                       v-model="setting.isEnabled"
                       @change="handleNotificationToggle(setting)"
+                      :disabled="setting.channel === 'IN_APP'"
                     />
-                    <span class="toggle-slider"></span>
+                    <span class="toggle-slider" :class="{ 'disabled': setting.channel === 'IN_APP' }"></span>
                   </label>
                 </div>
               </div>
@@ -2468,7 +2472,13 @@ const loadNotificationSettings = async () => {
     const response = await notificationSettingApi.getSettings()
 
     if (response.data && response.data.data) {
-      notificationSettings.value = response.data.data
+      notificationSettings.value = response.data.data.map(setting => {
+        // 앱 내 알림은 무조건 true로 고정
+        if (setting.channel === 'IN_APP') {
+          return { ...setting, isEnabled: true }
+        }
+        return setting
+      })
     }
   } catch (error) {
     console.error('알림 설정 로드 실패:', error)
@@ -2517,7 +2527,8 @@ const saveNotificationSettings = async () => {
   try {
     const settings = notificationSettings.value.map(setting => ({
       channel: setting.channel,
-      isEnabled: setting.isEnabled
+      // 앱 내 알림은 무조건 true로 강제
+      isEnabled: setting.channel === 'IN_APP' ? true : setting.isEnabled
     }))
 
     await notificationSettingApi.updateSettings(settings)
@@ -4738,6 +4749,18 @@ textarea:focus {
   line-height: 1.5;
 }
 
+.required-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: rgba(76, 175, 80, 0.15);
+  color: #4CAF50;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
 /* 토글 스위치 */
 .toggle-switch {
   position: relative;
@@ -4787,6 +4810,15 @@ textarea:focus {
 
 .toggle-switch input:focus + .toggle-slider {
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toggle-switch input:disabled + .toggle-slider.disabled {
+  cursor: not-allowed;
 }
 
 .notification-save-footer {
