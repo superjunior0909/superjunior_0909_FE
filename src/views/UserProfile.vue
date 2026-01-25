@@ -251,12 +251,15 @@
                 <div v-if="loadingPaidHistories" class="loading-state">
                   <p>이력을 불러오는 중...</p>
                 </div>
-                <div v-else-if="paidPointHistories.length === 0" class="empty-history">
-                  <p>이력이 없습니다</p>
+                <div v-else-if="paidPointHistories.length === 0" class="point-empty-state">
+                  <div class="empty-icon">💳</div>
+                  <p class="empty-title">충전 포인트 이력이 없습니다</p>
+                  <p class="empty-description">포인트를 충전하여 공동구매에 참여해보세요!</p>
                 </div>
                 <div v-else class="history-list">
                   <div v-for="item in paidPointHistories" :key="item.id" class="history-item">
                     <div class="history-info">
+                      <span class="history-date">{{ item.date }}</span>
                       <span class="history-amount" :class="item.type">
                         {{ item.type === 'credit' ? '+' : '-' }}{{ item.amount.toLocaleString() }}원
                       </span>
@@ -271,12 +274,15 @@
                 <div v-if="loadingBonusHistories" class="loading-state">
                   <p>이력을 불러오는 중...</p>
                 </div>
-                <div v-else-if="bonusPointHistories.length === 0" class="empty-history">
-                  <p>이력이 없습니다</p>
+                <div v-else-if="bonusPointHistories.length === 0" class="point-empty-state">
+                  <div class="empty-icon">🎁</div>
+                  <p class="empty-title">보너스 포인트 이력이 없습니다</p>
+                  <p class="empty-description">공동구매 참여나 이벤트를 통해 보너스 포인트를 받아보세요!</p>
                 </div>
                 <div v-else class="history-list">
                   <div v-for="item in bonusPointHistories" :key="item.id" class="history-item">
                     <div class="history-info">
+                      <span class="history-date">{{ item.date }}</span>
                       <span class="history-amount" :class="item.type">
                         {{ item.type === 'credit' ? '+' : '-' }}{{ item.amount.toLocaleString() }}원
                       </span>
@@ -3801,6 +3807,36 @@ const saveNotificationSettings = async () => {
   gap: 12px;
 }
 
+/* 포인트 빈 상태 스타일 */
+.point-empty-state {
+  padding: 60px 24px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  margin: 16px 0;
+}
+
+.point-empty-state .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.point-empty-state .empty-title {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.point-empty-state .empty-description {
+  margin: 0;
+  font-size: 14px;
+  color: #999;
+  line-height: 1.5;
+}
+
 /* 정산 현황 스타일 */
 .settlement-balance {
   padding: 24px;
@@ -3861,12 +3897,14 @@ const saveNotificationSettings = async () => {
 .history-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .history-date {
-  font-size: 13px;
-  color: #999;
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .history-amount {
@@ -3876,11 +3914,11 @@ const saveNotificationSettings = async () => {
 }
 
 .history-amount.credit {
-  color: #51cf66;
+  color: #4ade80;
 }
 
 .history-amount.debit {
-  color: #ff6b6b;
+  color: #f87171;
 }
 
 .history-status {
@@ -3891,15 +3929,15 @@ const saveNotificationSettings = async () => {
 }
 
 .history-status.credit {
-  background: rgba(81, 207, 102, 0.2);
-  color: #51cf66;
-  border: 1px solid #51cf66;
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
 }
 
 .history-status.debit {
-  background: rgba(255, 107, 107, 0.2);
-  color: #ff6b6b;
-  border: 1px solid #ff6b6b;
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
 }
 
 .loading-state {
