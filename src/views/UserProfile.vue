@@ -292,6 +292,37 @@
                 </div>
               </div>
             </div>
+
+            <!-- 결제 내역 -->
+            <div class="panel">
+              <div class="panel-header">
+                <h3>결제 내역</h3>
+              </div>
+              <div v-if="loadingPgPayments" class="loading-state">
+                <p>결제 내역을 불러오는 중...</p>
+              </div>
+              <div v-else-if="pgPaymentHistories.length === 0" class="point-empty-state">
+                <div class="empty-icon">💳</div>
+                <p class="empty-title">결제 내역이 없습니다</p>
+                <p class="empty-description">PG 결제를 통해 포인트를 충전해보세요!</p>
+              </div>
+              <div v-else class="payment-list">
+                <div
+                  v-for="payment in pgPaymentHistories"
+                  :key="payment.id"
+                  class="payment-item"
+                >
+                  <div class="payment-info">
+                    <span class="payment-date">{{ formatDate(payment.createdAt) }}</span>
+                    <span class="payment-method">{{ payment.paymentMethod }}</span>
+                    <span class="payment-amount">₩{{ formatPrice(payment.amount) }}</span>
+                  </div>
+                  <span class="payment-status" :class="payment.status.toLowerCase()">
+                    {{ payment.status }}
+                  </span>
+                </div>
+              </div>
+            </div>
           </section>
 
           <!-- 포인트 충전 모달 -->
@@ -1888,6 +1919,9 @@ watch(activeMenu, (newMenu) => {
     if (bonusPointHistories.value.length === 0) {
       fetchBonusPointHistories()
     }
+    if (!pgPaymentsLoaded.value) {
+      fetchPgPaymentHistories()
+    }
   }
 })
 
@@ -1916,6 +1950,11 @@ const paidPointHistories = ref([])
 const bonusPointHistories = ref([])
 const loadingPaidHistories = ref(false)
 const loadingBonusHistories = ref(false)
+
+// PG 결제 내역
+const pgPaymentHistories = ref([])
+const loadingPgPayments = ref(false)
+const pgPaymentsLoaded = ref(false)
 
 // 프로필 수정 모드
 const isEditingProfile = ref(false)
@@ -2509,6 +2548,36 @@ const fetchBonusPointHistories = async () => {
     bonusPointHistories.value = []
   } finally {
     loadingBonusHistories.value = false
+  }
+}
+
+// PG 결제 내역 조회
+const fetchPgPaymentHistories = async () => {
+  if (loadingPgPayments.value) return
+  loadingPgPayments.value = true
+  try {
+    const response = await authAPI.getPaymentHistories({
+      page: 0,
+      size: 10,
+      sort: 'createdAt,desc'
+    })
+    const raw = response?.data || response
+    const list = raw?.content || raw || []
+    pgPaymentHistories.value = list.map(payment => ({
+      id: payment.paymentPointId,
+      orderId: payment.orderId,
+      amount: payment.amount,
+      paymentMethod: payment.paymentMethod,
+      status: payment.status,
+      createdAt: payment.createdAt,
+      requestedAt: payment.requestedAt
+    }))
+  } catch (error) {
+    console.error('PG 결제 내역 조회 실패:', error)
+    pgPaymentHistories.value = []
+  } finally {
+    loadingPgPayments.value = false
+    pgPaymentsLoaded.value = true
   }
 }
 
@@ -3882,6 +3951,79 @@ const saveNotificationSettings = async () => {
 .settlement-history-item .history-status {
   font-size: 12px;
   color: #999;
+}
+
+/* PG 결제 내역 스타일 */
+.payment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.payment-item:hover {
+  border-color: #3a3a3a;
+  background: #1a1a1a;
+}
+
+.payment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.payment-date {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+}
+
+.payment-method {
+  font-size: 13px;
+  color: #999;
+}
+
+.payment-amount {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.payment-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.payment-status.done {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.payment-status.in_progress {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.payment-status.canceled,
+.payment-status.failed {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
 }
 
 .history-item {

@@ -188,9 +188,23 @@ export const authAPI = {
         const response = await api.get(`/points`)
         return response.data;
     },
-    getChargeHistory(paymentId) {
+
+    // PG 결제 내역 조회
+    getPaymentHistories: async({
+      page = 0,
+      size = 20,
+      sort = 'createdAt,desc'
+    } = {}) => {
+      const response = await api.get('/payments', {
+        params: { page, size, sort }
+      })
+      return response.data.data
+    },
+
+    // PG 결제 내역 상세 조회
+    getPaymentHistory(paymentId) {
         return api.get(`/payments/${paymentId}`)
-      },
+    },
 
     searchProducts: async ({
         keyword = '',
