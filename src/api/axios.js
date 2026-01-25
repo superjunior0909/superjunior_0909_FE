@@ -194,6 +194,9 @@ export const productApi = {
 
   deleteProduct: (productId) =>
     api.delete(`/products/${productId}`),
+
+  deleteProductImage: (imageUrl) =>
+    api.delete('/products/images', { params: { imageUrl } }),
 };
 
 /* =========================

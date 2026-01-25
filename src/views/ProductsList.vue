@@ -451,7 +451,10 @@ const mapToProductCard = (gp) => {
   const p = gp.productSearchInfo || {}
 
   // ✅ 이미지 우선순위: 상품 이미지 → 카테고리 기본 이미지
-  let image = categoryImages[p.category]
+  let image = p.imageUrl || p.image || p.thumbnailUrl || categoryImages[p.category]
+  if (!image || image.trim() === '') {
+    image = categoryImages[p.category]
+  }
 
   const originalPrice = p.price || 0
   const discountedPrice = gp.discountedPrice || originalPrice
