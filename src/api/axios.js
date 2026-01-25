@@ -137,25 +137,8 @@ api.interceptors.response.use(
 
     // 만료 토큰 판별(문자열/객체 모두 처리) - 가능하면 백엔드 errorCode로 바꾸는 게 더 좋음
     const data = error.response.data;
-    const errorMessage = typeof data === "string" ? data : data?.message || "";
-    const isExpired = errorMessage.includes("만료된 토큰");
-    const isNotLoggedIn = errorMessage.includes("로그인 정보가 없습니다");
 
-    // 로그인 정보가 없으면 refresh 시도하지 않고 그대로 반환
-    if (isNotLoggedIn) {
-      // 로컬 스토리지 비우기 (로그인 시 저장되는 항목들만 제거)
-      localStorage.removeItem("member_id");
-      localStorage.removeItem("user_email");
-      localStorage.removeItem("user_role");
-      return Promise.reject(error);
-    }
-
-    // 만료가 아닌 401은 그대로 반환
-    if (!isExpired) {
-      return Promise.reject(error);
-    }
-
-    // 만료된 토큰 → refresh 후 원요청 1회 재시도
+    // 401이면 refresh 후 원요청 1회 재시도
     originalRequest._retry = true;
 
     // refresh 중이면 큐로 대기했다가 refresh 완료 후 재시도

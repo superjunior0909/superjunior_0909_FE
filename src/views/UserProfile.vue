@@ -257,7 +257,6 @@
                 <div v-else class="history-list">
                   <div v-for="item in paidPointHistories" :key="item.id" class="history-item">
                     <div class="history-info">
-                      <span class="history-date">{{ item.date }}</span>
                       <span class="history-amount" :class="item.type">
                         {{ item.type === 'credit' ? '+' : '-' }}{{ item.amount.toLocaleString() }}원
                       </span>
@@ -278,7 +277,6 @@
                 <div v-else class="history-list">
                   <div v-for="item in bonusPointHistories" :key="item.id" class="history-item">
                     <div class="history-info">
-                      <span class="history-date">{{ item.date }}</span>
                       <span class="history-amount" :class="item.type">
                         {{ item.type === 'credit' ? '+' : '-' }}{{ item.amount.toLocaleString() }}원
                       </span>
