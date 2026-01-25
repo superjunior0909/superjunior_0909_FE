@@ -1072,19 +1072,47 @@
           >
             <h2 class="section-title">정산 현황</h2>
 
-            <div class="seller-center-grid">
-              <div class="seller-card settlement-card">
-                <div class="card-header">
-                  <div>
-                    <p class="card-subtitle">정산 내역</p>
-                    <h3>정산 현황</h3>
-                  </div>
-                  <button class="link-button" @click="goToSellerSettlement">
-                    전체보기 →
-                  </button>
+            <!-- 정산 잔액 -->
+            <div class="panel">
+              <div class="panel-header">
+                <h3>현재 잔액</h3>
+              </div>
+              <div class="settlement-balance">
+                <div v-if="sellerBalanceLoading" class="loading-state">
+                  <p>잔액 조회 중...</p>
                 </div>
-                <div class="empty-state-lg">
-                  <p>정산 내역이 없습니다</p>
+                <div v-else class="balance-display">
+                  <p class="balance-label">정산 가능 금액</p>
+                  <p class="balance-amount">₩{{ formatPrice(sellerBalance) }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 정산 이력 -->
+            <div class="panel">
+              <div class="panel-header">
+                <h3>정산 이력</h3>
+                <button class="link-button" @click="goToSellerSettlement">
+                  전체보기 →
+                </button>
+              </div>
+              <div v-if="sellerBalanceHistoryLoading" class="loading-state">
+                <p>정산 이력을 불러오는 중...</p>
+              </div>
+              <div v-else-if="sellerBalanceHistory.length === 0" class="empty-state">
+                <p>정산 내역이 없습니다</p>
+              </div>
+              <div v-else class="history-list">
+                <div
+                  v-for="item in sellerBalanceHistory"
+                  :key="item.id"
+                  class="settlement-history-item"
+                >
+                  <div class="history-info">
+                    <span class="history-date">{{ formatDate(item.createdAt) }}</span>
+                    <span class="history-status">{{ item.status }}</span>
+                  </div>
+                  <span class="history-amount">₩{{ formatPrice(item.amount) }}</span>
                 </div>
               </div>
             </div>
@@ -1456,6 +1484,13 @@ const sellerOrdersLoading = ref(false)
 const sellerOrdersLoaded = ref(false)
 const expandedGroupPurchaseId = ref(null)
 
+// 정산 관련 상태
+const sellerBalance = ref(0)
+const sellerBalanceHistory = ref([])
+const sellerBalanceLoading = ref(false)
+const sellerBalanceHistoryLoading = ref(false)
+const sellerBalanceLoaded = ref(false)
+
 const sellerSalesStats = computed(() => [
   { label: '등록된 상품', value: formatCount(sellerProductsAll.value.length), subtext: '현재 등록된 상품 수' },
   { label: '진행 중 공동구매', value: formatCount(sellerGroupPurchasesOpenCount.value), subtext: 'OPEN 상태 공동구매' },
@@ -1683,6 +1718,49 @@ const loadSellerOrdersSummary = async () => {
   }
 }
 
+// 판매자 잔액 조회
+const loadSellerBalance = async () => {
+  sellerBalanceLoading.value = true
+  try {
+    const response = await authAPI.getSellerBalance()
+    const data = response?.data || response
+    sellerBalance.value = data?.balance || 0
+  } catch (error) {
+    console.error('판매자 잔액 조회 실패:', error)
+    sellerBalance.value = 0
+  } finally {
+    sellerBalanceLoading.value = false
+  }
+}
+
+// 판매자 정산 이력 조회
+const loadSellerBalanceHistory = async () => {
+  if (sellerBalanceHistoryLoading.value) return
+  sellerBalanceHistoryLoading.value = true
+  try {
+    const response = await authAPI.getSellerBalanceHistory({
+      page: 0,
+      size: 10,
+      sort: 'createdAt,desc'
+    })
+    const raw = response?.data || response
+    const list = raw?.content || raw || []
+    sellerBalanceHistory.value = list.map(item => ({
+      id: item.sellerBalanceHistoryId,
+      settlementId: item.settlementId,
+      amount: item.amount,
+      status: item.status,
+      createdAt: item.createdAt
+    }))
+  } catch (error) {
+    console.error('판매자 정산 이력 조회 실패:', error)
+    sellerBalanceHistory.value = []
+  } finally {
+    sellerBalanceHistoryLoading.value = false
+    sellerBalanceLoaded.value = true
+  }
+}
+
 const clearSellerInfoErrors = () => {
   sellerInfoErrors.value = {
     bankCode: '',
@@ -1769,6 +1847,10 @@ const ensureSellerSalesData = async () => {
   }
   if (!sellerOrdersLoaded.value) {
     await loadSellerOrdersSummary()
+  }
+  if (!sellerBalanceLoaded.value) {
+    await loadSellerBalance()
+    await loadSellerBalanceHistory()
   }
 }
 
@@ -2565,7 +2647,7 @@ const loadOrders = async (page = 0) => {
     orderHistory.value = pageData.content
 
     orderPageInfo.value = {
-      currentPage: page, // ✅ 여기!!
+      currentPage: page,
       totalPages: pageData.totalPages,
       totalElements: pageData.totalElements,
       size: pageData.size
@@ -3717,6 +3799,53 @@ const saveNotificationSettings = async () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* 정산 현황 스타일 */
+.settlement-balance {
+  padding: 24px;
+  text-align: center;
+}
+
+.balance-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.balance-label {
+  margin: 0;
+  font-size: 14px;
+  color: #999;
+}
+
+.balance-amount {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.settlement-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+}
+
+.settlement-history-item .history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settlement-history-item .history-status {
+  font-size: 12px;
+  color: #999;
 }
 
 .history-item {

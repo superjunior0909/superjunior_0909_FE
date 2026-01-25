@@ -165,6 +165,24 @@ export const authAPI = {
         return response.data;
     },
 
+    // 판매자 잔액 조회
+    getSellerBalance: async() => {
+        const response = await api.get(`/balances`)
+        return response.data;
+    },
+
+    // 판매자 정산 이력 조회
+    getSellerBalanceHistory: async({
+      page = 0,
+      size = 20,
+      sort = 'createdAt,desc'
+    } = {}) => {
+      const response = await api.get('/balances/history', {
+        params: { page, size, sort }
+      })
+      return response.data.data
+    },
+
     // 포인트 잔액 조회
     getPoints: async() => {
         const response = await api.get(`/points`)
