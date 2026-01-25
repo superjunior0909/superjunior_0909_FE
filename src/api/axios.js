@@ -136,7 +136,7 @@ api.interceptors.response.use(
     }
 
     // 만료 토큰 판별(문자열/객체 모두 처리) - 가능하면 백엔드 errorCode로 바꾸는 게 더 좋음
-    const data = error.response.data;
+    void error.response.data;
 
     // 401이면 refresh 후 원요청 1회 재시도
     originalRequest._retry = true;
