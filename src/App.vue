@@ -18,8 +18,8 @@ import SiteHeader from './components/SiteHeader.vue'
 
 html {
   scroll-behavior: smooth;
-}
-
+}  
+ 
 :root {
   --bg: #0a0a0a;
   --text: #ffffff;
