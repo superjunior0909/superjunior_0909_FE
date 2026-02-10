@@ -22,7 +22,7 @@ jobs:
         with:
           source-directory: 'output'
           destination-github-username: sumyeom
-          destination-repository-name: superjunior_0909_FE
+          destination-repository-name: superjunior_fe_0909
           user-email: ${{ secrets.SUPERJUNIOR_ACCOUNT_EMAIL }}
           commit-message: ${{ github.event.commits[0].message }}
           target-branch: main
