@@ -198,7 +198,7 @@ onMounted(() => {
 
 <style scoped>
 .notifications-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 32px 0 60px;
 }
@@ -219,15 +219,15 @@ onMounted(() => {
 .page-header h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-action {
   padding: 8px 16px;
   background: transparent;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -235,8 +235,8 @@ onMounted(() => {
 }
 
 .btn-action:hover {
-  border-color: #3a3a3a;
-  color: #ffffff;
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 
 .tab-filters {
@@ -244,15 +244,15 @@ onMounted(() => {
   gap: 8px;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border);
 }
 
 .tab-btn {
   padding: 8px 20px;
   background: transparent;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   border-radius: 20px;
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -260,8 +260,8 @@ onMounted(() => {
 }
 
 .tab-btn:hover {
-  border-color: #3a3a3a;
-  color: #ffffff;
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 
 .tab-btn.active {
@@ -287,7 +287,7 @@ onMounted(() => {
 }
 
 .loading-state p {
-  color: #999;
+  color: var(--muted);
   font-size: 16px;
 }
 
@@ -302,7 +302,7 @@ onMounted(() => {
 }
 
 .empty-state p {
-  color: #999;
+  color: var(--muted);
   font-size: 16px;
 }
 
@@ -313,8 +313,8 @@ onMounted(() => {
 }
 
 .notification-item {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
   display: flex;
@@ -325,13 +325,13 @@ onMounted(() => {
 }
 
 .notification-item:hover {
-  background: #222222;
-  border-color: #3a3a3a;
+  background: var(--hover);
+  border-color: var(--border-strong);
 }
 
 .notification-item.unread {
-  border-left: 4px solid #ffffff;
-  background: #1f1f1f;
+  border-left: 4px solid var(--text);
+  background: var(--surface);
 }
 
 .notification-icon {
@@ -376,23 +376,23 @@ onMounted(() => {
 .notification-title {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .notification-message {
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
   line-height: 1.5;
 }
 
 .notification-time {
   font-size: 12px;
-  color: #666;
+  color: var(--muted);
   margin-top: 4px;
 }
 
 .notification-item.unread .notification-title {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 700;
 }
 
@@ -407,10 +407,10 @@ onMounted(() => {
 
 .btn-page {
   padding: 10px 20px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #ffffff;
+  color: var(--text);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -418,8 +418,8 @@ onMounted(() => {
 }
 
 .btn-page:hover:not(:disabled) {
-  background: #222222;
-  border-color: #3a3a3a;
+  background: var(--hover);
+  border-color: var(--border-strong);
 }
 
 .btn-page:disabled {
@@ -428,7 +428,7 @@ onMounted(() => {
 }
 
 .page-info {
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
   min-width: 80px;
   text-align: center;
@@ -450,6 +450,117 @@ onMounted(() => {
     height: 40px;
     font-size: 20px;
   }
+}
+
+/* 라이트 모드 스타일 */
+body.theme-light .notifications-page {
+  background: #ffffff !important;
+}
+
+:global(body.theme-light) .notifications-page {
+  background: #ffffff !important;
+}
+
+:global(body.theme-light) .page-header h1 {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .btn-action {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .btn-action:hover {
+  border-color: #0f172a !important;
+  color: #0f172a !important;
+  background: #f1f5f9 !important;
+}
+
+:global(body.theme-light) .tab-filters {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .tab-btn {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .tab-btn:hover {
+  border-color: #0f172a !important;
+  color: #0f172a !important;
+  background: #f1f5f9 !important;
+}
+
+:global(body.theme-light) .tab-btn.active {
+  background: #0f172a !important;
+  border-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+:global(body.theme-light) .loading-state p {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .empty-state p {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .notification-item {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .notification-item:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+:global(body.theme-light) .notification-item.unread {
+  border-left-color: #0f172a !important;
+  background: #f8fafc !important;
+}
+
+:global(body.theme-light) .notification-icon {
+  background: #f1f5f9 !important;
+}
+
+:global(body.theme-light) .notification-icon.order,
+:global(body.theme-light) .notification-icon.delivery,
+:global(body.theme-light) .notification-icon.review,
+:global(body.theme-light) .notification-icon.promotion,
+:global(body.theme-light) .notification-icon.settlement {
+  background: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .notification-title {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .notification-item.unread .notification-title {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .notification-message {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .notification-time {
+  color: #999999 !important;
+}
+
+:global(body.theme-light) .btn-page {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .btn-page:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  border-color: #0f172a !important;
+}
+
+:global(body.theme-light) .page-info {
+  color: #666666 !important;
 }
 </style>
 
