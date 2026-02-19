@@ -263,7 +263,7 @@ export const authAPI = {
                keyword = '',
                category = ''
            } = {}) => {
-        const response = await api.get('/ai/recommendations', {
+        const response = await api.get('/recommendations', {
             params: {
                 keyword,
                 category
