@@ -46,7 +46,7 @@
             @click="goToDetail(product.id)"
           >
             <div class="image-wrapper">
-              <img :src="product.image" :alt="product.title" />
+              <img :src="product.image" :alt="product.title" @error="(e) => handleProductImageError(e, product)" />
 
               <div class="badge-group">
                 <span
@@ -223,7 +223,7 @@
             @click="goToDetail(product.id)"
           >
             <div class="image-wrapper">
-              <img :src="product.image" :alt="product.title" />
+              <img :src="product.image" :alt="product.title" @error="(e) => handleProductImageError(e, product)" />
 
               <div class="badge-group">
                 <span
@@ -455,6 +455,18 @@ const getTimeLeft = (endDate) => {
   return d > 0 ? `${d}일 ${h % 24}시간 남음` : `${h}시간 남음`
 }
 
+const getCategoryFallbackImage = (product) => {
+  const key = product?.rawCategory || ''
+  return categoryImages[key] || categoryImages['PET']
+}
+
+const handleProductImageError = (e, product) => {
+  const img = e?.target
+  if (!img) return
+  img.onerror = null
+  img.src = getCategoryFallbackImage(product)
+}
+
 /* ======================
  * TRANSFORM
  * ====================== */
@@ -462,15 +474,16 @@ const getTimeLeft = (endDate) => {
 //형식 맞추기
 const mapToProductCard = (gp) => {
   const p = gp.productSearchInfo || {}
+  const categoryCode = p.category || 'PET'
 
   // ✅ 이미지 우선순위: 공동구매 이미지 → 상품 이미지 → 카테고리 기본 이미지
   let image = gp.imageUrl
     || p.imageUrl
     || p.image
     || p.thumbnailUrl
-    || categoryImages[p.category]
+    || categoryImages[categoryCode]
   if (!image || image.trim() === '') {
-    image = categoryImages[p.category]
+    image = categoryImages[categoryCode]
   }
 
   const originalPrice = p.price || 0
@@ -481,7 +494,6 @@ const mapToProductCard = (gp) => {
       : 0
 
   // 카테고리를 한글로 변환
-  const categoryCode = p.category || '기타'
   const categoryKorean = categoryMap[categoryCode] || categoryCode
 
   return {
@@ -489,6 +501,7 @@ const mapToProductCard = (gp) => {
     title: gp.title,
     subtitle: '',
     category: categoryKorean,
+    rawCategory: categoryCode,
     image,
     originalPrice,
     currentPrice: discountedPrice,

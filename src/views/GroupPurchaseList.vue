@@ -95,7 +95,7 @@
               @click="goToDetail(gp.id)"
             >
               <div class="image-wrapper">
-                <img :src="gp.image" :alt="gp.title" />
+                <img :src="gp.image" :alt="gp.title" @error="(e) => handleImageError(e, gp)" />
                 <div class="badge-group">
                   <span class="badge status-badge" :class="gp.status.toLowerCase()">
                     {{ getStatusText(gp.status) }}
@@ -334,6 +334,18 @@ const categoryOptions = computed(() => {
     label
   }))
 })
+
+const getCategoryFallbackImage = (gp) => {
+  const key = gp?.rawCategory || ''
+  return categoryImages[key] || categoryImages['PET']
+}
+
+const handleImageError = (e, gp) => {
+  const img = e?.target
+  if (!img) return
+  img.onerror = null
+  img.src = getCategoryFallbackImage(gp)
+}
 
 const loadGroupPurchases = async () => {
   loading.value = true

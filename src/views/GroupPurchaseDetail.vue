@@ -203,8 +203,13 @@ const getDefaultImage = () => {
   return 'https://placehold.co/600x400/1a1a1a/666?text=No+Image'
 }
 
+const getCategoryFallbackImage = () => {
+  const category = groupPurchase.value?.categoryOriginal || groupPurchase.value?.category
+  return categoryImages[category] || categoryImages['PET'] || getDefaultImage()
+}
+
 const productImage = computed(() => {
-  if (imageError.value) return getDefaultImage()
+  if (imageError.value) return getCategoryFallbackImage()
   if (!groupPurchase.value) return getDefaultImage()
 
   // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지

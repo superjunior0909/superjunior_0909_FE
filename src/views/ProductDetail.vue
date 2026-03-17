@@ -24,7 +24,7 @@
               :class="{ active: selectedImage === img || (!selectedImage && index === 0) }"
               @click="selectedImage = img"
             >
-              <img :src="img" :alt="`${product.title} ${index + 1}`" @error="e => e.target.src = getDefaultImage()" />
+              <img :src="img" :alt="`${product.title} ${index + 1}`" @error="(e) => handleThumbError(e)" />
             </div>
           </div>
         </div>
@@ -196,6 +196,11 @@ const getDefaultImage = () => {
   return 'https://placehold.co/400x400/1a1a1a/666?text=No+Image'
 }
 
+const getCategoryFallbackImage = () => {
+  const key = product.value?.categoryOriginal || ''
+  return categoryImages[key] || categoryImages['PET'] || getDefaultImage()
+}
+
 const loadProduct = async () => {
   try {
     const response = await api.get(`/products/${props.id}`)
@@ -216,6 +221,7 @@ const loadProduct = async () => {
       title: productData.name,
       subtitle: null,
       category: categoryKorean,
+      categoryOriginal: productData.category,
       price: productData.price,
       currentPrice: productData.price,
       originalPrice: productData.price,
@@ -240,7 +246,11 @@ const goToSeller = () => {
 }
 
 const handleImageError = (e) => {
-  e.target.src = getDefaultImage()
+  e.target.src = getCategoryFallbackImage()
+}
+
+const handleThumbError = (e) => {
+  e.target.src = getCategoryFallbackImage()
 }
 
 const formatDate = (dateString) => {
