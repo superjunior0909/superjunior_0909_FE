@@ -70,10 +70,12 @@
             @click="goToProduct(product.id)"
           >
             <div class="product-image-wrapper">
-              <div
+              <img
                 class="product-image"
-                :style="{ backgroundImage: `url(${product.image})` }"
-              ></div>
+                :src="product.image"
+                :alt="product.title"
+                @error="(e) => handleProductImageError(e, product)"
+              />
               <div class="badge hot">인기</div>
             </div>
             <div class="product-info">
@@ -136,7 +138,12 @@
             @click="goToProduct(product.id)"
           >
             <div class="product-image-wrapper">
-              <div class="product-image" :style="{ backgroundImage: `url(${product.image})` }"></div>
+              <img
+                class="product-image"
+                :src="product.image"
+                :alt="product.title"
+                @error="(e) => handleProductImageError(e, product)"
+              />
               <div class="badge urgent">마감임박</div>
             </div>
             <div class="product-info">
@@ -204,7 +211,12 @@
             @click="goToProduct(product.id)"
           >
             <div class="product-image-wrapper">
-              <div class="product-image" :style="{ backgroundImage: `url(${product.image})` }"></div>
+              <img
+                class="product-image"
+                :src="product.image"
+                :alt="product.title"
+                @error="(e) => handleProductImageError(e, product)"
+              />
               <div class="badge discount">할인</div>
             </div>
             <div class="product-info">
@@ -270,7 +282,12 @@
             @click="goToProduct(product.id)"
           >
             <div class="product-image-wrapper">
-              <div class="product-image" :style="{ backgroundImage: `url(${product.image})` }"></div>
+              <img
+                class="product-image"
+                :src="product.image"
+                :alt="product.title"
+                @error="(e) => handleProductImageError(e, product)"
+              />
               <div class="badge recommend">추천</div>
             </div>
             <div class="product-info">
@@ -456,6 +473,18 @@ const isUrgent = (endDate) => {
   return (new Date(endDate) - new Date()) / (1000 * 60 * 60) <= 24
 }
 
+const getCategoryFallbackImage = (product) => {
+  const key = product?.rawCategory || ''
+  return categoryImages[key] || categoryImages['PET']
+}
+
+const handleProductImageError = (e, product) => {
+  const img = e?.target
+  if (!img) return
+  img.onerror = null
+  img.src = getCategoryFallbackImage(product)
+}
+
 //진행 중인 공동구매 중 참여 수량이 제일 많은 항목 불러오기
 const fetchPopularProducts = async () => {
   const res = await groupPurchaseApi.searchGroupPurchases({
@@ -472,7 +501,7 @@ const mapToProductCard = (gp) => {
   const product = gp.productSearchInfo || {}
 
   // 카테고리 변환 (백엔드 enum -> 한글)
-  const categoryCode = product.category
+  const categoryCode = product.category || 'PET'
   const categoryKorean = categoryMap[categoryCode] || categoryCode || '기타'
 
   // 이미지 우선순위: 공동구매 이미지 → 상품 이미지 → 카테고리 기본 이미지
@@ -502,6 +531,7 @@ const mapToProductCard = (gp) => {
     title: gp.title,
     subtitle: gp.description,
     category: categoryKorean,
+    rawCategory: categoryCode,
     seller: gp.sellerName || '판매자',
     image,
 
@@ -1020,8 +1050,8 @@ body.theme-light .btn-outline:hover {
   left: 0;
   width: 100%;
   height: 100%;
-  background-size: cover;
-  background-position: center;
+  object-fit: cover;
+  object-position: center;
 }
 
 .badge {
