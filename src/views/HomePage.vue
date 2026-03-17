@@ -70,11 +70,15 @@
             @click="goToProduct(product.id)"
           >
             <div class="product-image-wrapper">
-              <img
+              <div
                 class="product-image"
-                :src="product.image"
+                :style="{ backgroundImage: `url(${getDisplayedImage(product)})` }"
+              ></div>
+              <img
+                class="product-image-preload"
+                :src="getDisplayedImage(product)"
                 :alt="product.title"
-                @error="(e) => handleProductImageError(e, product)"
+                @error="() => handleBgImageError(product)"
               />
               <div class="badge hot">인기</div>
             </div>
@@ -138,11 +142,15 @@
             @click="goToProduct(product.id)"
           >
             <div class="product-image-wrapper">
-              <img
+              <div
                 class="product-image"
-                :src="product.image"
+                :style="{ backgroundImage: `url(${getDisplayedImage(product)})` }"
+              ></div>
+              <img
+                class="product-image-preload"
+                :src="getDisplayedImage(product)"
                 :alt="product.title"
-                @error="(e) => handleProductImageError(e, product)"
+                @error="() => handleBgImageError(product)"
               />
               <div class="badge urgent">마감임박</div>
             </div>
@@ -211,11 +219,15 @@
             @click="goToProduct(product.id)"
           >
             <div class="product-image-wrapper">
-              <img
+              <div
                 class="product-image"
-                :src="product.image"
+                :style="{ backgroundImage: `url(${getDisplayedImage(product)})` }"
+              ></div>
+              <img
+                class="product-image-preload"
+                :src="getDisplayedImage(product)"
                 :alt="product.title"
-                @error="(e) => handleProductImageError(e, product)"
+                @error="() => handleBgImageError(product)"
               />
               <div class="badge discount">할인</div>
             </div>
@@ -282,11 +294,15 @@
             @click="goToProduct(product.id)"
           >
             <div class="product-image-wrapper">
-              <img
+              <div
                 class="product-image"
-                :src="product.image"
+                :style="{ backgroundImage: `url(${getDisplayedImage(product)})` }"
+              ></div>
+              <img
+                class="product-image-preload"
+                :src="getDisplayedImage(product)"
                 :alt="product.title"
-                @error="(e) => handleProductImageError(e, product)"
+                @error="() => handleBgImageError(product)"
               />
               <div class="badge recommend">추천</div>
             </div>
@@ -478,11 +494,15 @@ const getCategoryFallbackImage = (product) => {
   return categoryImages[key] || categoryImages['PET']
 }
 
-const handleProductImageError = (e, product) => {
-  const img = e?.target
-  if (!img) return
-  img.onerror = null
-  img.src = getCategoryFallbackImage(product)
+const getDisplayedImage = (product) => {
+  return product?.imageResolved || product?.image || getCategoryFallbackImage(product)
+}
+
+const handleBgImageError = (product) => {
+  if (!product) return
+  const fallback = getCategoryFallbackImage(product)
+  if (!fallback) return
+  product.imageResolved = fallback
 }
 
 //진행 중인 공동구매 중 참여 수량이 제일 많은 항목 불러오기
@@ -534,6 +554,7 @@ const mapToProductCard = (gp) => {
     rawCategory: categoryCode,
     seller: gp.sellerName || '판매자',
     image,
+    imageResolved: image,
 
     // 가격
     originalPrice,
@@ -1050,8 +1071,16 @@ body.theme-light .btn-outline:hover {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
+  background-size: cover;
+  background-position: center;
+}
+
+.product-image-preload {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .badge {
